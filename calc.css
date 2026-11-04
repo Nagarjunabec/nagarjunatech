@@ -1,0 +1,34 @@
+/* R24 and R26 Calculator – horizontal layout, mobile friendly */
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;min-height:100vh;font-family:Arial,Helvetica,sans-serif;background:#eef2fb;color:#222;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.calc{max-width:1000px;margin:0 auto;background:#fff;min-height:100vh;box-shadow:0 0 16px #0b2a5b22}
+.top{background:linear-gradient(135deg,#0b2a5b,#0f4a9e);color:#fff;padding:14px 16px 16px;text-align:center}
+.top h1{margin:6px 0 4px;font-size:19px;line-height:1.25}
+.top h2{margin:0;font-size:22px;color:#ffcf8a;line-height:1.3}
+.top p{margin:4px 0 0;font-size:13px;color:#cfe3ff}
+.back{display:inline-block;float:left;color:#cfe3ff;font-size:14px;font-weight:700;text-decoration:none;padding:4px 0}
+.top::after{content:"";display:block;clear:both}
+form{padding:16px}
+.row6{display:grid;grid-template-columns:repeat(5,1fr) 1.2fr;gap:12px;align-items:end}       /* all inputs and the button in ONE row */
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label{font-size:13px;font-weight:700}
+.field input{width:100%;min-height:46px;padding:8px 10px;font-size:16px;border:1.5px solid #b9c2d6;border-radius:8px;background:#fff}
+.field input:focus{outline:none;border-color:#0f4a9e;box-shadow:0 0 0 3px #0f4a9e22}
+button[type=submit]{min-height:46px;font-size:16px;font-weight:700;color:#fff;background:#28a745;border:0;border-radius:8px;cursor:pointer}
+button[type=submit]:active{filter:brightness(.9)}
+.result-wrap{padding:0 16px 4px}
+.result-wrap h3{margin:4px 0 6px;font-size:15px;color:#0b2a5b}
+.result-box{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:12px 24px;padding:14px;background:#f3f6ff;border:1px solid #d6dbe8;border-radius:12px;text-align:center;line-height:1.5;overflow-wrap:anywhere}
+.total{flex:0 1 auto;font-size:14px;color:#555}
+.total strong{display:block;font-size:34px;color:#0b2a5b;line-height:1.2}
+.parts{flex:0 1 320px;border-collapse:collapse;font-size:14px}
+.parts td{padding:6px 6px;border-top:1px solid #dde3f2;text-align:left}
+.parts td+td{text-align:right;font-weight:700}
+.result-box>span{flex:0 1 auto}
+.footer{margin:14px 16px 0;padding:14px 0 20px;border-top:1px solid #d6dbe8;text-align:center;color:green;line-height:1.7}
+.footer b:last-child{color:#0b2a5b}
+@media (max-width:760px){.row6{grid-template-columns:repeat(3,1fr)}button[type=submit]{grid-column:1 / -1}}
+@media (max-width:420px){.row6{grid-template-columns:1fr 1fr;gap:10px}.top h2{font-size:19px}.top h1{font-size:17px}}
+@media (min-width:1040px){body{padding-top:20px}.calc{min-height:0;border-radius:16px;overflow:hidden}}

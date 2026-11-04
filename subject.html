@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <script>/* clean URL  /subject/DS-2026-2027/materials : make every relative file (style.css, app.js ...) resolve from the site root */
+  (function () { var p = location.pathname, i = p.indexOf('/subject'); document.write('<base href="' + (i >= 0 ? p.slice(0, i + 1) : p.replace(/[^\/]*$/, '')) + '">'); })();</script>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0A1B45">
+  <meta name="robots" content="noindex">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="assets/icon-192.png">
+  <link rel="stylesheet" href="style.css">
+  <title>Subject · Nagarjuna Tech Academy</title>
+</head>
+<body>
+<div class="shell">
+  <aside class="side" id="side"></aside>
+  <div class="scrim" id="scrim"></div>
+  <div class="content">
+    <header class="top" id="top"></header>
+    <main id="main"></main>
+    <div class="foot">© Nagarjuna Tech Academy · Developed By T Nagarjuna and Gaddam Venu</div>
+  </div>
+</div>
+<div id="modal" hidden></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script src="shell.js"></script>
+<script src="export.js"></script>
+<script src="marks.js"></script>
+<script>
+/* URL:  /subject/DS-2026-2027/materials   (old links  subject.html?id=...#materials  still work and are rewritten to the clean form) */
+const URLSUB = (() => {
+  const m = location.pathname.match(/\/subject\/([^\/]+)(?:\/([^\/]+))?\/?$/);
+  const q = new URLSearchParams(location.search);                                   // local form:  subject.html?code=DS-2026-2027&tab=marks
+  return m ? { code: decodeURIComponent(m[1]).toUpperCase(), tab: m[2] || '' } : q.get('code') ? { code: q.get('code').toUpperCase(), tab: q.get('tab') || location.hash.slice(1) } : { id: q.get('id'), tab: location.hash.slice(1) };
+})();
+let sid = null;
+/* the 3 "Drive link" sections share one table (materials); the category decides where a link is shown */
+const SYL_CATS = ['Theory Syllabus','Lab Syllabus'];                              // Syllabus (Lab Syllabus only for Theory + Lab)
+const LP_CATS = ['Theory Lesson Plan','Lab Lesson Plan'];                         // Lesson Plan (Lab Lesson Plan only for Theory + Lab)
+const MAT_CATS = ['Unit 1','Unit 2','Unit 3','Unit 4','Unit 5','Unit 6'];        // Materials
+const MARK_CATS = ['Mid 1','Mid 2','AAT1','AAT2'];                                // Marks Share
+const LABSHEET_CATS = ['Lab Marks'];                                             // Lab Sheet (Theory + Lab only)
+const ADM = ROLE == 'admin', STU = ROLE == 'student';
+let C, ST = [], CRS = [], tab = '', showPw = false, q = '';
+/* ---------- lab batches (v30): Batch 1 / Batch 2 of a Theory + Lab subject.  BT = { colors, rows:[{student_id, regno, batch}] } or null (not available) ---------- */
+let BT = null, LBF = '';                                                      // LBF = batch filter on the Lab Programs list ('' = all, '1', '2')
+const BCOL = { 1: '#2563eb', 2: '#f59e0b' };                                  // default batch colors (blue, yellow)
+async function loadBatches() { BT = null; if (C.subject.kind != 'lab') return; try { BT = await T('batches_get', { sid }); } catch (e) { BT = null; } }
+const bCol = n => (BT && BT.colors && /^#[0-9a-f]{6}$/i.test(BT.colors[n] || '')) ? BT.colors[n] : BCOL[n];
+const bRegs = n => (BT ? BT.rows : []).filter(r => r.batch == n).map(r => r.regno);
+const bOfStudent = id => { const r = BT && BT.rows.find(x => x.student_id == id); return r ? r.batch : null; };
+const bPill = (n, txt) => n ? '<span class="bpill" style="--bc:' + bCol(n) + ';--bi:' + inkOn(bCol(n)) + '">' + (txt || 'Batch ' + n) + '</span>' : '<span class="bpill all">All students</span>';
+
+/* tabs depend on the subject type:  Theory only = Students, Materials, Video Lessons, Marks Share, Notices
+                                      Theory + Lab = the same + Lab Programs + Lab Sheet  (v20: Students, Syllabus, Lesson Plan come first) */
+const tabs = () => [['students','Students'],['syllabus','Syllabus'],['lessonplan','Lesson Plan'],['materials','Materials'],['videos','Video Lessons'],['marks','Theory Marks'],['notices','Notices'],
+    ['labs','Lab Programs'],['labsheet','Lab Marks'],['crs','CR']]
+  .filter(t => (t[0] != 'labs' && t[0] != 'labsheet') || C.subject.kind == 'lab')
+  .filter(t => STU ? t[0] != 'students' && t[0] != 'crs' : ADM || t[0] != 'crs');
+
+async function load() {
+  C = await T('subject_content', { sid });
+  if (!STU) ST = await T('subject_students', { sid });
+  if (ADM) CRS = await T('cr_list', { sid });
+  await loadBatches();
+  draw();
+}
+function draw() {
+  const inCats = c => C.materials.filter(m => c.includes(m.category)).length;
+  const n = { students: ST.length, syllabus: inCats(SYL_CATS), lessonplan: inCats(LP_CATS), materials: inCats(MAT_CATS), marks: '', labsheet: '', notices: C.notices.length, labs: C.labs.length, videos: C.videos.length, crs: CRS.length };
+  const TABS = tabs();
+  if (!tab || !TABS.some(t => t[0] == tab)) tab = URLSUB.tab || '';
+  if (!TABS.some(t => t[0] == tab)) tab = TABS[0][0];
+  $('#main').innerHTML =
+    '<div class="subhead"><h2>' + esc(C.subject.code) + ' <span class="pill ' + (C.subject.kind == 'lab' ? 'ok' : '') + ' kind">' + (C.subject.kind == 'lab' ? 'Theory + Lab' : 'Theory only') + '</span></h2><p>' + esc(C.subject.full_name || '') + (ROLE == 'cr' ? ' · you can add students here' : '') + '</p></div>' +
+    '<div class="subbar">' + TABS.map(t => '<button class="' + (t[0] == tab ? 'on' : '') + '" onclick="go(\'' + t[0] + '\')">' + t[1] + (n[t[0]] === '' ? '' : ' <i>' + n[t[0]] + '</i>') + '</button>').join('') + '</div>' +
+    '<div id="pane"></div>';
+  V[tab]();
+  urlSync();
+}
+function urlSync() {                         // keep the address bar clean:  /subject/DS-2026-2027/materials
+  if (!/^https?:/.test(location.protocol)) return;
+  try { history.replaceState(null, '', subUrl(C.subject.code, tab)); document.title = C.subject.code + ' · Nagarjuna Tech Academy'; } catch (e) {}
+}
+function go(t) { tab = t; draw(); }
+
+/* e-mail: ONLY when the admin posts content (material / lab / video / notice) -> every student of the subject gets one e-mail. */
+const sel = (id, arr, cur) => '<select id="' + id + '">' + arr.map(v => '<option' + (v == cur ? ' selected' : '') + '>' + v + '</option>').join('') + '</select>';
+
+function shareView(cats, L) {
+  if (C.subject.kind != 'lab') cats = cats.filter(c => !/^Lab /.test(c));   // Lab Syllabus / Lab Lesson Plan only for Theory + Lab
+  const by = {}; C.materials.filter(m => cats.includes(m.category)).forEach(m => (by[m.category] = by[m.category] || []).push(m));
+  $('#pane').innerHTML =
+    (ADM ? '<div class="card"><h3>' + L.add + '</h3>' +
+      '<div class="mhead"><span>Category</span><span>Title</span><span>Drive link</span><span></span></div><div id="mrows"></div>' +
+      '<div class="row"><button class="btn alt" id="mr">+ Add another row</button></div>' +
+      '<div class="row"><button class="btn y" id="mp">' + L.post + '</button></div><p class="sm">No e-mail is sent for this section.</p></div>' : '') +
+    (cats.filter(c => by[c]).map(c => '<h3 style="margin-top:20px">' + c + '</h3><div class="card" style="margin-top:8px">' +
+      by[c].map(m => '<div class="li"><div><b>' + esc(m.title) + '</b><span class="sm"> · ' + fmtDate(m.created_at) + '</span></div><div class="act">' +
+        '<button class="btn" onclick="viewDoc(\'' + m.id + '\')">View</button>' +
+        (ADM ? '<a class="btn alt" href="' + esc(m.link) + '" target="_blank" rel="noopener">Open in Drive</a>' : '') +
+        (ADM ? '<button class="btn alt" onclick="delItem(\'material_del\',\'' + m.id + '\')">Delete</button>' : '') + '</div></div>').join('') + '</div>').join('') ||
+      '<p class="sm" style="margin-top:16px">' + L.none + '</p>');
+  if (ADM) {
+    const addRow = () => { const d = document.createElement('div'); d.className = 'mrow';
+      d.innerHTML = sel('', cats).replace('id=""', 'class="mc"') + '<input class="mt" aria-label="Title" autocomplete="off"><input class="ml" type="url" aria-label="Drive link" autocomplete="off">' +
+        '<button type="button" class="btn alt xs" aria-label="Remove row" onclick="this.parentNode.remove()">✕</button>'; $('#mrows').append(d); };
+    addRow(); $('#mr').onclick = addRow;
+    $('#mp').onclick = e => run(async () => {
+      const rows = [...document.querySelectorAll('.mrow')].map(r => ({ category: r.querySelector('.mc').value, title: r.querySelector('.mt').value, link: r.querySelector('.ml').value })).filter(r => r.link.trim());
+      if (!rows.length) throw Error('Paste at least one Drive link');
+      await T('material_add', { sid, rw: rows });
+      toast(L.done); await load();
+    }, e.target);
+  }
+}
+
+const V = {
+/* ===================== STUDENTS (admin + CR) ===================== */
+students() {
+  $('#pane').innerHTML =
+    '<div class="card"><h3>Add student</h3><div class="form2">' +
+      '<label class="fld">Reg No (5-15 letters/digits)<input id="rg" maxlength="15" autocapitalize="characters" autocomplete="off"></label>' +
+      '<label class="fld">Name<input id="nm" maxlength="80" autocomplete="off"></label>' +
+      '<label class="fld">Email<input id="ea" type="email" autocomplete="off"></label>' +
+      '<label class="fld">Year<select id="yr"><option>1</option><option>2</option><option>3</option><option>4</option></select></label>' +
+      '<label class="fld">Semester<select id="sm">' + [1, 2, 3, 4, 5, 6, 7, 8].map(v => '<option>' + v + '</option>').join('') + '</select></label>' +
+      '<label class="fld">Student mobile number<input id="mb" type="tel" inputmode="numeric" maxlength="13" autocomplete="off" placeholder="10 digits"></label>' +
+      '<label class="fld">Parent mobile number<input id="pm" type="tel" inputmode="numeric" maxlength="13" autocomplete="off" placeholder="10 digits"></label>' +
+      '<label class="fld">Password<input id="pwd" autocomplete="off" placeholder="empty = Reg No"></label>' +
+    '</div><p class="sm">Type a password, or leave it empty: then the password is the <b>Reg No</b> (capital or small letters both work). The student can change it later, or not.</p>' +
+    '<div class="row"><button class="btn y" id="add">Add student</button></div>' +
+    '<details open><summary>Upload students from Excel</summary><p class="sm">Excel (.xlsx / .xls) or .csv with the columns <b>RegNo, Name, Email, Year, Semester, Mobile, ParentMobile, Password</b> (Password is optional: empty = Reg No).</p>' +
+      '<div class="row"><input type="file" id="xf" accept=".xlsx,.xls,.csv" aria-label="Excel file"><button class="btn" id="xi">Upload and add</button><button class="btn alt" id="xt">Download Excel template</button></div></details>' +
+    '<details><summary>Add many students by typing</summary><p class="sm">One student per line:  RegNo, Name, Email, Year, Semester, Mobile, ParentMobile, Password   (Password optional: empty = Reg No)</p>' +
+      '<textarea id="bulk"></textarea><div class="row"><button class="btn" id="addm">Add all</button></div></details></div>' +
+    '<div class="row"><label class="fld">Search<input id="sq" autocomplete="off"></label>' +
+      (ADM ? '<button class="btn alt" id="tp">Show passwords</button>' : '') + '</div>' +
+    (ADM ? '<div class="row"><b>Download logins:</b><button class="btn alt" id="dx">Excel</button><button class="btn alt" id="dp">PDF</button><button class="btn alt" id="dw">Word</button></div>' : '') +
+    '<div id="stt"></div>';
+  stTable();
+  $('#sq').oninput = e => { q = e.target.value; stTable(); };
+  $('#add').onclick = e => run(async () => {
+    await addStudents([{ regno: $('#rg').value, name: $('#nm').value, email: $('#ea').value, year: $('#yr').value, semester: $('#sm').value, mobile: $('#mb').value, parent_mobile: $('#pm').value, password: $('#pwd').value }]);
+  }, e.target);
+  $('#addm').onclick = e => run(async () => {
+    const rows = $('#bulk').value.split('\n').map(l => l.trim()).filter(Boolean).map(l => { const c = l.split(/[,\t]/).map(x => x.trim());
+      return { regno: c[0], name: c[1], email: c[2], year: c[3], semester: c[4], mobile: c[5], parent_mobile: c[6], password: c[7] || '' }; });
+    if (!rows.length) throw Error('Enter at least one line');
+    await addStudents(rows);
+  }, e.target);
+  $('#xt').onclick = e => run(async () => { await lib(XLSX_URL); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['RegNo', 'Name', 'Email', 'Year', 'Semester', 'Mobile', 'ParentMobile', 'Password']]), 'Students'); XLSX.writeFile(wb, 'students-template.xlsx'); }, e.target);
+  $('#xi').onclick = e => run(async () => {
+    const f = $('#xf').files[0]; if (!f) throw Error('Choose the Excel file first');
+    await lib(XLSX_URL);
+    const wb = XLSX.read(await f.arrayBuffer()), rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+    const key = h => String(h).toLowerCase().replace(/[^a-z]/g, ''), pick = (r, names) => { for (const h in r) if (names.includes(key(h))) return String(r[h]).trim(); return ''; };
+    const list = rows.map(r => ({ regno: pick(r, ['regno', 'registrationno', 'registerno', 'rollno', 'id']), name: pick(r, ['name', 'studentname']), email: pick(r, ['email', 'mail', 'emailid']),
+      year: pick(r, ['year', 'studyyear']), semester: pick(r, ['semester', 'sem', 'semno']),
+      mobile: pick(r, ['mobile', 'mobileno', 'mobilenumber', 'phone', 'phoneno', 'studentmobile', 'studentmobileno']),
+      parent_mobile: pick(r, ['parentmobile', 'parentmobileno', 'parentmobilenumber', 'parentsmobile', 'parentphone', 'parentphoneno', 'guardianmobile']), password: pick(r, ['password', 'pw']) })).filter(r => r.regno || r.name || r.email);
+    if (!list.length) throw Error('No student rows found. Columns needed: RegNo, Name, Email, Year, Semester, Mobile, ParentMobile (Password optional)');
+    if (!confirm('Add ' + list.length + ' student(s) from this file?')) return;
+    await addStudents(list);
+  }, e.target);
+  if (ADM) {
+    $('#dx').onclick = e => run(() => dl('xlsx'), e.target); $('#dp').onclick = e => run(() => dl('pdf'), e.target); $('#dw').onclick = e => run(() => dl('doc'), e.target);
+    $('#tp').onclick = e => { showPw = !showPw; e.target.textContent = (showPw ? 'Hide' : 'Show') + ' passwords'; stTable(); };
+  }
+},
+
+/* ===================== SYLLABUS / LESSON PLAN / MATERIALS / MARKS SHARE / LAB SHEET (Drive links, same table, different categories) ===================== */
+syllabus() { shareView(SYL_CATS, { add: 'Add syllabus (Google Drive link)' + (C.subject.kind == 'lab' ? ' – Theory Syllabus and Lab Syllabus' : ''), post: 'Post syllabus', none: 'No syllabus posted yet.', what: 'New syllabus', done: 'Syllabus posted' }); },
+lessonplan() { shareView(LP_CATS, { add: 'Add lesson plan (Google Drive link)' + (C.subject.kind == 'lab' ? ' – Theory Lesson Plan and Lab Lesson Plan' : ''), post: 'Post lesson plan', none: 'No lesson plan posted yet.', what: 'New lesson plan', done: 'Lesson plan posted' }); },
+materials() { shareView(MAT_CATS, { add: 'Add materials (Google Drive links)', post: 'Post materials', none: 'No materials posted yet.', what: 'New study material', done: 'Materials posted' }); },
+marks() { run(() => marksView('theory')); },
+labsheet() { run(() => marksView('lab')); },
+
+/* ===================== NOTICES ===================== */
+notices() {
+  $('#pane').innerHTML =
+    (ADM ? '<div class="card"><h3>Add notice</h3><div class="form2">' +
+      '<label class="fld">Title<input id="nt" maxlength="120" autocomplete="off"></label>' +
+      '<label class="fld">Date<input id="nd" type="date"></label></div>' +
+      '<div class="fld" style="margin-top:14px"><label id="nilbl">What to do</label>' + rteBar() + '<div id="ni" class="rte-ed rich" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="nilbl"></div></div>' +
+      '<div class="fld" style="margin-top:14px"><label>E-mail this notice to</label><div class="row" style="margin:4px 0 8px"><label class="chk"><input type="radio" name="nto" value="all" checked> All students</label><label class="chk"><input type="radio" name="nto" value="sel"> Specific students</label></div>' +
+        '<div id="nsel" hidden><div class="row" style="margin:0 0 6px"><input id="nsq" placeholder="Search Reg No / name" style="max-width:260px"><button type="button" class="btn alt" id="nsa">Select all</button><button type="button" class="btn alt" id="nsn">Clear</button></div>' +
+        '<div class="pick">' + (ST.map(s => '<label class="chk nsr" data-q="' + esc((s.regno + ' ' + s.name).toLowerCase()) + '"><input type="checkbox" class="nsc" value="' + esc(s.regno) + '"' + (/^\S+@\S+\.\S+$/.test(s.email || '') ? '' : ' disabled') + '><b>' + esc(s.regno) + '</b> ' + esc(s.name) + (/^\S+@\S+\.\S+$/.test(s.email || '') ? '' : ' <small>(no e-mail)</small>') + '</label>').join('') || '<p class="sm">No students in this subject yet.</p>') + '</div>' +
+        '<p class="sm">The notice is posted on the website as usual; only the e-mail goes to the students you tick.</p></div></div>' +
+      '<div class="row"><button class="btn y" id="np">Post notice</button></div></div>' : '') +
+    (C.notices.map(n => '<div class="card item"><div class="li"><div><h3 style="margin:0">' + esc(n.title) + '</h3>' +
+      (n.due_date ? '<span class="pill wait">' + fmtDate(n.due_date) + '</span> ' : '') + '<span class="sm">Posted ' + fmtDT(n.created_at) + '</span></div>' +
+      (ADM ? '<div class="act"><button class="btn alt" onclick="delItem(\'notice_del\',\'' + n.id + '\')">Delete</button></div>' : '') + '</div>' +
+      (n.message ? '<div class="rich" style="margin-top:10px">' + richHtml(n.message) + '</div>' : '') + '</div>').join('') || '<p class="sm" style="margin-top:16px">No notices yet.</p>');
+  if (ADM) {
+    rteInit();
+    document.querySelectorAll('input[name=nto]').forEach(r => r.onchange = () => $('#nsel').hidden = document.querySelector('input[name=nto]:checked').value != 'sel');
+    $('#nsq').oninput = () => { const v = $('#nsq').value.trim().toLowerCase(); document.querySelectorAll('.nsr').forEach(l => l.hidden = v && !l.dataset.q.includes(v)); };
+    $('#nsa').onclick = () => document.querySelectorAll('.nsr:not([hidden]) .nsc:not(:disabled)').forEach(c => c.checked = true);
+    $('#nsn').onclick = () => document.querySelectorAll('.nsc').forEach(c => c.checked = false);
+    $('#np').onclick = e => run(async () => {
+      const t = $('#nt').value.trim(), d = $('#nd').value, ed = $('#ni'), html = cleanHtml(ed.innerHTML), plain = ed.textContent.trim();
+      const only = document.querySelector('input[name=nto]:checked').value == 'sel' ? [...document.querySelectorAll('.nsc:checked')].map(c => c.value) : null;   // null = all students
+      if (only && !only.length) throw Error('Tick at least one student for the e-mail (or choose All students)');
+      const m = plain ? html : '';
+      await T('notice_add', { sid, ti: t, msg: m, d });
+      toast('Notice posted'); await load();
+      const body = (d ? '<p><b>Date:</b> ' + esc(fmtDate(d)) + '</p>' : '') + m;
+      toast('Notice posted' + await mailPosted(sid, C.subject.code + ' – new notice: ' + t, (d ? 'Date: ' + fmtDate(d) + '\n\n' : '') + htmlText(m), 'Notice', body, only));
+    }, $('#np'));
+  }
+},
+
+/* ===================== LAB PROGRAMS (Drive link and/or text, posted for ONE batch) ===================== */
+labs() {
+  const nums = Array.from({ length: 50 }, (_, i) => i + 1), n1 = bRegs(1).length, n2 = bRegs(2).length, made = n1 + n2 > 0;
+  const mine = STU && BT && BT.rows.length ? BT.rows[0].batch : null;                     // a student's own batch
+  const list = C.labs.map((l, ix) => ({ l, ix })).filter(o => !LBF || !o.l.batch || o.l.batch == LBF);     // old programs without a batch are for everybody, so they stay in every filter
+  const bcard = !ADM ? '' : '<div class="card' + (made ? '' : ' bstep') + '"><h3 style="margin:0 0 6px">Lab batches</h3>' +
+    (BT === null ? '<p class="sm" style="color:#b4202f"><b>Run the new SQL file <code>16_lab_batches.sql</code> once in Supabase</b> (see README), then press Refresh.</p>' :
+      '<div class="row" style="margin:6px 0 10px">' + bPill(1, 'Batch 1 · ' + n1 + ' student(s)') + bPill(2, 'Batch 2 · ' + n2 + ' student(s)') +
+        (made && ST.length - n1 - n2 > 0 ? '<span class="sm">' + (ST.length - n1 - n2) + ' student(s) are in no batch</span>' : '') + '</div>' +
+      '<p class="sm" style="margin:0 0 10px">' + (made ? 'A lab program is posted for one batch: only that batch sees it and only that batch gets the e-mail.' : '<b>Step 1:</b> create the batches. Choose which students are in Batch 1 and which are in Batch 2 (by Reg No). Then post the lab programs.') + '</p>' +
+      '<div class="row" style="margin:0"><button class="btn ' + (made ? 'alt' : 'y') + '" id="bmk">' + (made ? '✎ Edit batches' : '+ Create batches') + '</button></div>') + '</div>';
+  const form = !ADM || BT === null || !made ? '' : '<div class="card"><h3>Add lab program</h3>' +
+    '<div class="fld"><label id="lbl">Batch</label><div class="bsel" role="radiogroup" aria-labelledby="lbl">' + [1, 2].map(b => { const c = bRegs(b).length;
+      return '<label class="bopt' + (c ? '' : ' off') + '" style="--bc:' + bCol(b) + ';--bi:' + inkOn(bCol(b)) + '"><input type="radio" name="lbt" value="' + b + '"' + (c ? '' : ' disabled') + '><span><b>Batch ' + b + '</b><small>' + c + ' student(s)</small></span></label>'; }).join('') +
+      '<label class="bopt both' + (n1 && n2 ? '' : ' off') + '" style="--bc:#0b2a5b;--bi:#ffffff"><input type="radio" name="lbt" value="both"' + (n1 && n2 ? '' : ' disabled') + '><span><b>Both batches</b><small>' + (n1 + n2) + ' student(s)</small></span></label></div></div>' +
+    '<div class="form2" style="margin-top:14px">' +
+      '<label class="fld">Lab number<select id="lx">' + nums.map(v => '<option value="' + v + '">Lab ' + v + '</option>').join('') + '<option value="other">Other number…</option></select>' +
+        '<input id="lxo" type="number" min="1" max="999" inputmode="numeric" placeholder="Type the lab number" hidden></label>' +
+      '<label class="fld">Date<input id="ld" type="date"></label>' +
+      '<label class="fld">Time<select id="lslot">' + LAB_SLOTS.map(v => '<option>' + esc(v) + '</option>').join('') + '</select></label>' +
+      '<label class="fld">Lab location<input id="lloc" maxlength="80" autocomplete="off" placeholder="e.g. CSE Lab 2, Block A"></label></div>' +
+    '<label class="fld" style="margin-top:14px">Title (optional)<input id="lt" maxlength="120" autocomplete="off" placeholder="e.g. Linked list operations"></label>' +
+    '<p class="sm" style="margin:14px 0 6px"><b>Give the program as a Drive link, as code, or both (at least one).</b> The link and code are shown on the website only; the e-mail to the batch has only the lab details.</p><div class="form2">' +
+    '<label class="fld">Drive link<input id="ll" type="url" autocomplete="off"></label></div>' +
+    '<label class="fld" style="margin-top:14px">Program (code)<textarea id="lpg" class="mono" rows="8" spellcheck="false"></textarea></label>' +
+    '<label class="fld" style="margin-top:14px">What to do (assignment)<textarea id="lk"></textarea></label>' +
+    '<div class="row"><button class="btn y" id="lp">Post lab program</button><span class="sm" id="lpn"></span></div></div>';
+  const filt = ADM || ROLE == 'cr' ? (made ? '<div class="bfilter"><b>Show:</b>' + [['', 'All'], ['1', 'Batch 1'], ['2', 'Batch 2']].map(f => '<button type="button" class="bf' + (LBF == f[0] ? ' on' : '') + '"' + (f[0] ? ' style="--bc:' + bCol(f[0]) + ';--bi:' + inkOn(bCol(f[0])) + '"' : '') + ' data-b="' + f[0] + '">' + f[1] + '</button>').join('') + '</div>' : '') :
+    (mine ? '<p style="margin:0 0 12px">You are in ' + bPill(mine) + '</p>' : '');
+  $('#pane').innerHTML = bcard + form + filt +
+    (list.map(({ l, ix }) => '<div class="card item lcard" style="--bc:' + (l.batch ? bCol(l.batch) : '#cbd5e1') + '"><div class="li"><div><h3 style="margin:0">' + (l.exp_no ? 'Lab ' + esc(String(l.exp_no).replace(/^(lab|exp)\s*/i, '')) + ' – ' : '') + esc(l.title) + '</h3>' +
+      (STU && mine ? '' : bPill(l.batch) + ' ') + (l.lab_date ? '<span class="pill ok">' + fmtDate(l.lab_date) + '</span> ' : '') + (l.slot ? '<span class="pill">' + esc(l.slot) + '</span> ' : (l.lab_time ? '<span class="pill">' + fmtTime(l.lab_time) + '</span> ' : '')) +
+      (l.location ? '<span class="pill wait">' + esc(l.location) + '</span> ' : '') + '<span class="sm">Posted ' + fmtDT(l.created_at) + '</span></div><div class="act">' +
+      (l.link ? '<a class="btn" href="' + esc(l.link) + '" target="_blank" rel="noopener">Open Drive link</a>' : '') +
+      (l.program ? '<button class="btn alt" onclick="copyProg(' + ix + ')">Copy program</button>' : '') +
+      (ADM ? '<button class="btn alt" onclick="delItem(\'lab_del\',\'' + l.id + '\')">Delete</button>' : '') + '</div></div>' +
+      (l.task ? '<p class="pre"><b>What to do:</b>\n' + esc(l.task) + '</p>' : '') +
+      (l.program ? '<pre class="code">' + esc(l.program) + '</pre>' : '') + '</div>').join('') || '<p class="sm" style="margin-top:16px">No lab programs yet.</p>');
+  document.querySelectorAll('.bf').forEach(b => b.onclick = () => { LBF = b.dataset.b; V.labs(); });
+  if (!ADM) return;
+  if ($('#bmk')) $('#bmk').onclick = () => batchModal();
+  if (!$('#lp')) return;
+  const first = document.querySelector('input[name=lbt]:not(:disabled)'); if (first) first.checked = true;
+  const note = () => { const b = document.querySelector('input[name=lbt]:checked'); $('#lpn').textContent = !b ? '' : b.value == 'both' ? 'The e-mail goes to all ' + (n1 + n2) + ' student(s) of Batch 1 and Batch 2.' : 'The e-mail goes only to the ' + bRegs(b.value).length + ' student(s) of Batch ' + b.value + '.'; };
+  document.querySelectorAll('input[name=lbt]').forEach(r => r.onchange = note); note();
+  $('#lx').onchange = e => { $('#lxo').hidden = e.target.value != 'other'; };
+  $('#lp').onclick = e => run(async () => {
+    const bt = (document.querySelector('input[name=lbt]:checked') || {}).value;
+    const x = $('#lx').value == 'other' ? $('#lxo').value.trim() : $('#lx').value, t = $('#lt').value.trim(), d = $('#ld').value, slot = $('#lslot').value, loc = $('#lloc').value.trim(),
+      k = $('#lk').value.trim(), l = $('#ll').value.trim(), pg = $('#lpg').value;
+    if (!bt) throw Error('Choose the batch (Batch 1, Batch 2 or Both batches)');
+    if (!/^\d{1,3}$/.test(x)) throw Error('Choose or type the lab number');
+    if (!d) throw Error('Choose the lab date');
+    const bts = bt == 'both' ? [1, 2] : [Number(bt)], who = bt == 'both' ? 'Batch 1 and Batch 2' : 'Batch ' + bt;       // 'Both batches' = the same program is posted once for each batch
+    try { for (const b of bts) await T('lab_add', { sid, ex: x, ti: t, task: k, prog: pg, d, slot, loc, lk: l, bt: b }); }
+    catch (er) { throw /lab_add|schema cache/i.test(er.message || '') ? Error('Run the new SQL file 16_lab_batches.sql once in Supabase (see README), then try again.') : er; }
+    await load();
+    const msg = who + '\nLab ' + x + (t ? ' – ' + t : '') + '\nDate: ' + fmtDate(d) + '\nTime: ' + slot + (loc ? '\nLab location: ' + loc : '') + (k ? '\n\nWhat to do:\n' + k : '');
+    toast('Lab program posted for ' + who + await mailPosted(sid, C.subject.code + ' – ' + who + ' – Lab ' + x + ' on ' + fmtDate(d), msg, 'Lab Program', undefined, bts.flatMap(bRegs), who));
+  }, $('#lp'));
+},
+
+/* ===================== VIDEO LESSONS (links) ===================== */
+videos() {
+  $('#pane').innerHTML =
+    (ADM ? '<div class="card"><h3>Add video lessons (YouTube / Drive / any link)</h3>' +
+      '<div id="vrows"></div>' +
+      '<div class="row"><button class="btn alt" id="vr">+ Add another row</button></div>' +
+      '<div class=\"row\"><button class=\"btn y\" id=\"vp\">Post videos</button></div></div>' : '') +
+    (C.videos.length ? '<div class="card" style="margin-top:16px">' + C.videos.map(v => '<div class="li"><div><b>' + esc(v.title) + '</b><span class="sm"> · ' + fmtDT(v.created_at) + '</span></div><div class="act">' +
+      '<a class="btn" href="' + esc(v.link) + '" target="_blank" rel="noopener">Watch</a>' +
+      (ADM ? '<button class="btn alt" onclick="delItem(\'video_del\',\'' + v.id + '\')">Delete</button>' : '') + '</div></div>').join('') + '</div>' : '<p class="sm" style="margin-top:16px">No video lessons yet.</p>');
+  if (ADM) {
+    const addRow = () => { const d = document.createElement('div'); d.className = 'mrow vrow';
+      d.innerHTML = '<label class="vf"><span>Lesson title</span><input class="vt" autocomplete="off" placeholder="e.g. Unit 1 – Introduction"></label><label class="vf"><span>Video link</span><input class="vl" type="url" autocomplete="off" placeholder="https://"></label>' +
+        '<button type="button" class="btn alt xs" aria-label="Remove row" onclick="this.parentNode.remove()">✕</button>'; $('#vrows').append(d); };
+    addRow(); $('#vr').onclick = addRow;
+    $('#vp').onclick = e => run(async () => {
+      const rows = [...document.querySelectorAll('.vrow')].map(r => ({ title: r.querySelector('.vt').value, link: r.querySelector('.vl').value })).filter(r => r.link.trim());
+      if (!rows.length) throw Error('Paste at least one video link');
+      await T('video_add', { sid, rw: rows });
+      toast('Videos posted'); await load();
+      const msg = rows.map(r => '• ' + (r.title.trim() || 'Lesson')).join('\n');
+      toast('Videos posted' + await mailPosted(sid, C.subject.code + ' – new video lesson posted', msg, 'Video Lessons'));
+    }, e.target);
+  }
+},
+
+/* ===================== CR (admin only) ===================== */
+crs() {
+  $('#pane').innerHTML =
+    '<div class="card"><h3>Add CR for this subject</h3><p class="sm">The CR can see everything in this subject and can add students. Nothing else. The CR cannot change the password: only you (admin) can set or reset it. Empty password = the CR ID.</p><div class="form2">' +
+      '<label class="fld">CR ID (example: CSE-CR)<input id="cu" maxlength="20" autocapitalize="characters" autocomplete="off"></label>' +
+      '<label class="fld">Name<input id="cn" maxlength="80" autocomplete="off"></label>' +
+      '<label class="fld">Email (optional)<input id="ce" type="email" autocomplete="off"></label>' +
+      '<label class="fld">Password (empty = same as CR ID)<input id="cp" autocomplete="off"></label></div>' +
+    '<div class="row"><button class="btn y" id="ca">Add CR</button></div></div>' +
+    '<div class="tw"><table class="stack"><tr><th>CR ID</th><th>Name</th><th>Email</th><th>Password</th><th></th></tr>' +
+    (CRS.map(c => '<tr><td data-label="CR ID"><b>' + esc(c.username) + '</b></td><td data-label="Name"><span class="nm">' + avatar(c.name || c.username, c.photo, 'sm') + esc(c.name || '') + '</span></td><td data-label="Email">' + esc(c.email || '') + '</td>' +
+      '<td data-label="Password"><code>' + (showPw ? esc(c.pw) : '••••••••') + '</code></td><td class="act"><a onclick="showPw=!showPw;V.crs()">' + (showPw ? 'Hide' : 'View') + '</a><a onclick="editCr(\'' + c.id + '\')">Edit</a><a onclick="resetCr(\'' + c.id + '\')">Reset</a><a onclick="rmCr(\'' + c.id + '\')">Remove</a></td></tr>').join('') ||
+      '<tr><td colspan="5" class="sm">No CR yet.</td></tr>') + '</table></div>';
+  $('#ca').onclick = e => run(async () => {
+    const r = await T('cr_add', { sid, u: $('#cu').value, n: $('#cn').value, e: $('#ce').value, p: $('#cp').value });
+    toast(r.existing ? 'CR already existed - added to this subject' : 'CR added'); await load();
+  }, e.target);
+}
+};
+
+/* ---------- actions ---------- */
+async function addStudents(rows) {
+  const r = await T('students_add', { sid, rw: rows }), msg = [];
+  if (r.added.length) msg.push(r.added.length + ' added');
+  if (r.existing.length) msg.push(r.existing.length + ' already had an account and were added to this subject');
+  if (r.skipped.length) msg.push(r.skipped.length + ' skipped: ' + r.skipped.map(x => x.regno + ' (' + x.why + ')').join('; '));
+  toast(msg.join(' · '), !r.added.length && !r.existing.length);
+  await load();
+}
+function stTable() {
+  const list = ST.filter(s => !q || (s.regno + ' ' + s.name + ' ' + s.email + ' ' + (s.mobile || '') + ' ' + (s.parent_mobile || '')).toLowerCase().includes(q.toLowerCase()));
+  $('#stt').innerHTML = '<div class="tw"><table class="stack"><tr><th>Reg No</th><th>Name</th><th>Email</th><th>Year</th><th>Sem</th><th>Mobile</th><th>Parent Mobile</th>' + (ADM ? '<th>Password</th><th></th>' : '') + '</tr>' +
+    (list.map(s => '<tr><td data-label="Reg No"><b>' + esc(s.regno) + '</b></td><td data-label="Name"><span class="nm">' + avatar(s.name, s.photo, 'sm') + esc(s.name) + '</span></td><td data-label="Email">' + esc(s.email) + '</td><td data-label="Year">' + s.year + '</td>' +
+      '<td data-label="Sem">' + (s.semester || '–') + '</td><td data-label="Mobile">' + esc(s.mobile || '–') + '</td><td data-label="Parent Mobile">' + esc(s.parent_mobile || '–') + '</td>' +
+      (ADM ? '<td data-label="Password"><code>' + (showPw ? esc(s.pw) : '••••••••') + '</code></td>' +
+        '<td class="act"><a onclick="editSt(\'' + s.id + '\')">Edit</a><a onclick="resetSt(\'' + s.id + '\')">Reset</a><a onclick="rmSt(\'' + s.id + '\')">Remove</a></td>' : '') + '</tr>').join('') ||
+      '<tr><td colspan="9" class="sm">No students yet.</td></tr>') + '</table></div>';
+}
+/* ---------- download the logins of this subject: Excel / PDF / Word ---------- */
+const LH = ['Reg No', 'Name', 'Email', 'Year', 'Semester', 'Mobile', 'Parent Mobile', 'Password'];
+const loginRows = () => { if (!ST.length) throw Error('No students in this subject yet'); return ST.map(s => [s.regno, s.name, s.email, String(s.year), String(s.semester || ''), s.mobile || '', s.parent_mobile || '', s.pw]); };
+const dl = kind => exportTable(kind, LH, loginRows(), C.subject.code + ' – student logins', C.subject.code + '-logins');
+const stu = i => ST.find(s => s.id == i);
+
+function editSt(i) {
+  const s = stu(i);
+  modal('<h3>Edit student</h3>' +
+    '<label class="fld">Reg No<input id="e1" value="' + esc(s.regno) + '" maxlength="15" autocapitalize="characters"></label>' +
+    '<label class="fld">Name<input id="e2" value="' + esc(s.name) + '"></label>' +
+    '<label class="fld">Email<input id="e3" type="email" value="' + esc(s.email) + '"></label>' +
+    '<label class="fld">Year' + sel('e4', [1, 2, 3, 4], s.year) + '</label>' +
+    '<label class="fld">Semester' + sel('e8', (s.semester ? [] : ['']).concat([1, 2, 3, 4, 5, 6, 7, 8]), s.semester) + '</label>' +
+    '<label class="fld">Student mobile number<input id="e9" type="tel" inputmode="numeric" maxlength="13" value="' + esc(s.mobile || '') + '"></label>' +
+    '<label class="fld">Parent mobile number<input id="e10" type="tel" inputmode="numeric" maxlength="13" value="' + esc(s.parent_mobile || '') + '"></label>' +
+    '<label class="fld">Password<input id="e5" value="' + esc(s.pw) + '"></label><p class="sm">The default password is the Reg No (caps or small letters both work).</p>' +
+    '<div class="row" style="margin:0"><button class="btn y" id="e7">Save</button><button class="btn alt" onclick="closeModal()">Cancel</button></div>');
+  $('#e7').onclick = e => run(async () => {
+    /* read every field BEFORE the popup is closed (closing removes the inputs) */
+    const v = { rg: $('#e1').value, n: $('#e2').value, e: $('#e3').value, y: parseInt($('#e4').value), sm: parseInt($('#e8').value), mb: $('#e9').value, pm: $('#e10').value, p: $('#e5').value.trim() };
+    await T('student_edit', { i, rg: v.rg, n: v.n, e: v.e, y: v.y, sm: v.sm, mb: v.mb, pm: v.pm });
+    if (v.p && v.p !== s.pw) await T('student_reset', { i, p: v.p });
+    closeModal(); toast('Saved'); await load();
+  }, e.target);
+}
+function resetSt(i) {
+  const s = stu(i);
+  if (!confirm('Reset the password of ' + s.regno + ' to the Reg No (' + s.regno + ')?')) return;
+  run(async () => { await T('student_reset', { i, p: s.regno }); toast('Password is now ' + s.regno); await load(); });
+}
+function rmSt(i) {
+  const s = stu(i);
+  if (!confirm('Remove ' + s.regno + ' from ' + C.subject.code + '?\nThe account is deleted if the student is in no other subject.')) return;
+  run(async () => { await T('student_remove', { sid, ids: [i] }); toast('Removed'); await load(); });
+}
+function editCr(i) {
+  const c = CRS.find(x => x.id == i);
+  modal('<h3>Edit CR</h3>' +
+    '<label class="fld">CR ID<input id="c1" value="' + esc(c.username) + '" maxlength="20" autocapitalize="characters"></label>' +
+    '<label class="fld">Name<input id="c2" value="' + esc(c.name || '') + '" maxlength="80"></label>' +
+    '<label class="fld">Email (optional)<input id="c3" type="email" value="' + esc(c.email || '') + '"></label>' +
+    '<label class="fld">Password<input id="c4" value="' + esc(c.pw) + '"></label>' +
+    '<div class="row" style="margin:0"><button class="btn y" id="c5">Save</button><button class="btn alt" onclick="closeModal()">Cancel</button></div>');
+  $('#c5').onclick = e => run(async () => {
+    /* read every field BEFORE the popup is closed (closing removes the inputs) */
+    const v = { u: $('#c1').value, n: $('#c2').value, e: $('#c3').value, p: $('#c4').value.trim() };
+    await T('cr_edit', { i, u: v.u, n: v.n, e: v.e, p: v.p });
+    closeModal(); toast('CR saved'); await load();
+  }, e.target);
+}
+function resetCr(i) {
+  const c = CRS.find(x => x.id == i);
+  if (!confirm('Reset the password of ' + c.username + ' to the CR ID (' + c.username + ')?')) return;
+  run(async () => { await T('cr_reset', { i, p: c.username }); toast('Password is now ' + c.username); await load(); });
+}
+function rmCr(i) {
+  if (!confirm('Remove this CR from ' + C.subject.code + '? The CR login is deleted if no other subject is assigned.')) return;
+  run(async () => { await T('cr_remove', { sid, i }); toast('Removed'); await load(); });
+}
+/* ---------- protected viewer: PDF / Word / PPT / Excel Drive links open INSIDE the site (no download, no print, no copy) ---------- */
+function embedUrl(u) {
+  let m = u.match(/docs\.google\.com\/(document|presentation|spreadsheets)\/d\/([\w-]+)/);
+  if (m) return 'https://docs.google.com/' + m[1] + '/d/' + m[2] + '/preview';
+  m = u.match(/drive\.google\.com\/file\/d\/([\w-]+)/) || u.match(/drive\.google\.com\/(?:open|uc)\?(?:[^#]*&)?id=([\w-]+)/);
+  return m ? 'https://drive.google.com/file/d/' + m[1] + '/preview' : '';
+}
+let _vk = null;
+function viewDoc(id) {
+  const m = C.materials.find(x => x.id == id); if (!m) return;
+  const src = embedUrl(m.link);
+  if (!src) { window.open(m.link, '_blank', 'noopener'); return; }          // not a Google Drive link: opens normally
+  const who = (localStorage.ng_name || ROLE || '') + ' · ' + C.subject.code,
+    wm = "url(\"data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="360" height="200"><text x="20" y="110" font-family="Arial" font-size="18" fill="#0a1b45" fill-opacity="0.13" transform="rotate(-24 180 100)">' + who.replace(/[<>&"']/g, '') + '</text></svg>') + "\")";
+  closeViewer();
+  const v = document.createElement('div'); v.id = 'viewer';
+  v.innerHTML = '<div class="vbar"><b>' + esc(m.title) + '</b><button class="btn y" onclick="closeViewer()">Close</button></div>' +
+    '<div class="vwrap"><iframe src="' + src + '" sandbox="allow-scripts allow-same-origin allow-forms" referrerpolicy="no-referrer" allow="fullscreen" title="Document"></iframe>' +
+    '<div class="vblock"></div><div class="vmark" style="background-image:' + wm + '"></div></div>';
+  document.body.append(v); document.body.classList.add('viewing');
+  const stop = e => e.preventDefault();
+  _vk = { stop, key: e => { const k = e.key.toLowerCase(); if (k == 'printscreen' || k == 'escape' && 0 || (e.ctrlKey || e.metaKey) && 'pscaxu'.includes(k)) e.preventDefault(); if (k == 'escape') closeViewer(); } };
+  ['contextmenu', 'copy', 'cut', 'dragstart', 'selectstart'].forEach(t => document.addEventListener(t, _vk.stop));
+  document.addEventListener('keydown', _vk.key);
+}
+function closeViewer() {
+  const v = $('#viewer'); if (v) v.remove(); document.body.classList.remove('viewing');
+  if (_vk) { ['contextmenu', 'copy', 'cut', 'dragstart', 'selectstart'].forEach(t => document.removeEventListener(t, _vk.stop)); document.removeEventListener('keydown', _vk.key); _vk = null; }
+}
+if (ROLE != 'admin') document.body.classList.add('nocopy');                // students / CR: page cannot be printed
+/* ---------- rich text box for notices: bold, italic, underline, alignment, bullets, numbers ---------- */
+function rteBar() {
+  const b = (cmd, label, title, arg) => '<button type="button" class="rb" title="' + title + '" aria-label="' + title + '" onmousedown="event.preventDefault()" onclick="rteCmd(\'' + cmd + '\'' + (arg ? ',\'' + arg + '\'' : '') + ')">' + label + '</button>';
+  return '<div class="rte-bar" role="toolbar" aria-label="Text formatting">' +
+    b('bold', '<b>B</b>', 'Bold') + b('italic', '<i>I</i>', 'Italic') + b('underline', '<u>U</u>', 'Underline') + '<span class="rsep"></span>' +
+    b('justifyLeft', '⬑ Left', 'Align left') + b('justifyCenter', 'Center', 'Align centre') + b('justifyRight', 'Right', 'Align right') + b('justifyFull', 'Justify', 'Justify') + '<span class="rsep"></span>' +
+    b('insertUnorderedList', '• Bullets', 'Bullet list') + b('insertOrderedList', '1. Numbers', 'Numbered list') + '<span class="rsep"></span>' +
+    b('formatBlock', 'Heading', 'Heading', 'H3') + b('formatBlock', 'Normal', 'Normal text', 'P') + b('removeFormat', 'Clear', 'Remove formatting') + '</div>';
+}
+function rteCmd(cmd, arg) { const ed = $('#ni'); if (!ed) return; ed.focus(); document.execCommand(cmd, false, arg || null); }
+function rteInit() {
+  const ed = $('#ni'); if (!ed) return;
+  document.execCommand('defaultParagraphSeparator', false, 'div');
+  ed.addEventListener('paste', e => {                                    // paste as plain text (no foreign styles)
+    e.preventDefault(); document.execCommand('insertText', false, (e.clipboardData || window.clipboardData).getData('text/plain'));
+  });
+}
+
+/* ---------- create / edit the lab batches (admin) ---------- */
+function batchModal() {
+  if (!ST.length) return toast('Add students to this subject first (Students tab)', 1);
+  const cur = {}; (BT ? BT.rows : []).forEach(r => cur[r.student_id] = r.batch);
+  modal('<h3>Lab batches · ' + esc(C.subject.code) + '</h3>' +
+    '<p class="sm">Put every student in <b>Batch 1</b> or <b>Batch 2</b>. A student can be in only one batch. Students left as “No batch” do not see new lab programs.</p>' +
+    '<div class="form2" style="margin:10px 0"><label class="fld">Batch 1 color<input type="color" id="bc1" value="' + bCol(1) + '"></label><label class="fld">Batch 2 color<input type="color" id="bc2" value="' + bCol(2) + '"></label></div>' +
+    '<div class="form2"><label class="fld">Batch 1 – Reg Nos<textarea id="br1" rows="3" class="mono" placeholder="Paste Reg Nos (comma, space or new line)"></textarea></label>' +
+      '<label class="fld">Batch 2 – Reg Nos<textarea id="br2" rows="3" class="mono" placeholder="Paste Reg Nos (comma, space or new line)"></textarea></label></div>' +
+    '<div class="row" style="margin:8px 0"><button type="button" class="btn alt" id="bap">Apply the typed Reg Nos</button><button type="button" class="btn alt" id="bhf">Split in half</button><button type="button" class="btn alt" id="bcl">Clear all</button></div>' +
+    '<label class="fld">Search<input id="bq" autocomplete="off" placeholder="Reg No or name"></label>' +
+    '<p class="sm" id="bsum" style="margin:8px 0 4px"></p>' +
+    '<div class="pick" style="max-height:300px">' + ST.map(s => '<div class="brow" data-q="' + esc((s.regno + ' ' + s.name).toLowerCase()) + '"><span><b>' + esc(s.regno) + '</b> ' + esc(s.name) + '</span>' +
+      '<select class="bs" data-id="' + s.id + '" data-r="' + esc(s.regno) + '"><option value="">No batch</option><option value="1"' + (cur[s.id] == 1 ? ' selected' : '') + '>Batch 1</option><option value="2"' + (cur[s.id] == 2 ? ' selected' : '') + '>Batch 2</option></select></div>').join('') + '</div>' +
+    '<div class="row" style="margin:14px 0 0"><button class="btn y" id="bsv">Save batches</button><button class="btn alt" onclick="closeModal()">Cancel</button></div>');
+  const sels = () => [...document.querySelectorAll('.bs')];
+  const sum = () => { const c = { 1: 0, 2: 0, '': 0 }; sels().forEach(x => c[x.value]++); $('#bsum').innerHTML = bPill(1, 'Batch 1 · ' + c[1]) + ' ' + bPill(2, 'Batch 2 · ' + c[2]) + ' <span class="sm">No batch · ' + c[''] + '</span>'; };
+  sum();
+  document.querySelector('.pick').onchange = sum;
+  $('#bq').oninput = e => { const v = e.target.value.trim().toLowerCase(); document.querySelectorAll('.brow').forEach(r => r.hidden = v && !r.dataset.q.includes(v)); };
+  $('#bap').onclick = () => {
+    const miss = [], seen = new Set();
+    [1, 2].forEach(b => { String($('#br' + b).value).toUpperCase().split(/[\s,;]+/).filter(Boolean).forEach(rg => {
+      const x = sels().find(o => o.dataset.r.toUpperCase() == rg); if (!x) return miss.push(rg);
+      if (seen.has(rg)) return; seen.add(rg); x.value = String(b); }); });
+    sum(); toast(miss.length ? 'Not in this subject: ' + miss.slice(0, 6).join(', ') + (miss.length > 6 ? '…' : '') : 'Reg Nos applied. Press Save batches.', !!miss.length);
+  };
+  $('#bhf').onclick = () => { const a = sels(), h = Math.ceil(a.length / 2); a.forEach((x, i) => x.value = i < h ? '1' : '2'); sum(); };
+  $('#bcl').onclick = () => { sels().forEach(x => x.value = ''); sum(); };
+  $('#bsv').onclick = e => run(async () => {
+    const rw = sels().filter(x => x.value).map(x => ({ student_id: x.dataset.id, batch: Number(x.value) })), colors = { 1: $('#bc1').value, 2: $('#bc2').value };
+    if (!rw.some(r => r.batch == 1) && !rw.some(r => r.batch == 2)) { if (!confirm('No student is in a batch. Save anyway?')) return; }
+    if (colors[1].toLowerCase() == colors[2].toLowerCase()) throw Error('Give the two batches different colors');
+    try { await T('batches_save', { sid, rw, colors }); }
+    catch (er) { throw /batches_save|schema cache/i.test(er.message || '') ? Error('Run the new SQL file 16_lab_batches.sql once in Supabase (see README), then try again.') : er; }
+    closeModal(); toast('Batches saved'); await load();
+  }, e.target);
+}
+function copyProg(ix) { navigator.clipboard.writeText(C.labs[ix].program).then(() => toast('Program copied'), () => toast('Could not copy', 1)); }
+function delItem(fn, i) { if (!confirm('Delete this item?')) return; run(async () => { await T(fn, { i }); await load(); }); }
+
+if (needLogin()) {
+  (async () => {
+    const list = await T('subjects_list');                                   // find the subject from the code in the address
+    const s = URLSUB.code ? list.find(x => x.code.toUpperCase() == URLSUB.code) : list.find(x => x.id == URLSUB.id);
+    if (!s) { buildShell('dash'); $('#main').innerHTML = '<p class="note bad-note">Subject not found, or it is not assigned to you. <a href="' + page('dashboard') + '">Go to the dashboard</a></p>'; return; }
+    sid = s.id; buildShell('sub:' + s.code);
+    await load();
+  })().catch(e => { $('#main').innerHTML = '<p class="note bad-note">' + esc(e.message) + '</p>'; });
+}
+</script>
+</body>
+</html>

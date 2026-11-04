@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0b0f14">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="assets/icon-192.png">
+  <link rel="stylesheet" href="login.css">
+  <title>Login · Nagarjuna Tech Academy</title>
+</head>
+<body>
+<div class="scene">
+  <canvas id="dust" aria-hidden="true"></canvas>
+
+  <header class="bar">
+    <div class="g">
+      <a class="ib" id="apk" href="#" target="_blank" rel="noopener" aria-label="Download the Android app" title="Android app">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span class="t">App</span></a>
+      <a class="ib" href="calculator.html" aria-label="R24 and R26 Calculator" title="R24 and R26 Calculator">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="11" x2="8.01" y2="11"/><line x1="12" y1="11" x2="12.01" y2="11"/><line x1="16" y1="11" x2="16.01" y2="11"/><line x1="8" y1="15" x2="8.01" y2="15"/><line x1="12" y1="15" x2="12.01" y2="15"/><line x1="16" y1="15" x2="16.01" y2="15"/><line x1="8" y1="19" x2="12" y2="19"/></svg><span class="t">R24 · R26</span></a>
+      <button type="button" class="ib" id="rf" aria-label="Refresh the page" title="Refresh"><span id="rfi" style="display:flex"></span></button>
+    </div>
+    <div class="dots" id="dots" role="radiogroup" aria-label="Lamp color">
+      <button type="button" class="dot on" role="radio" aria-checked="true"  aria-label="Amber"     title="Amber"     data-c="#ffb33d" data-r="255,179,61"  data-i="#1b1300" style="--d:#ffb33d"></button>
+      <button type="button" class="dot"    role="radio" aria-checked="false" aria-label="Cyan"      title="Cyan"      data-c="#19e3ff" data-r="25,227,255"  data-i="#00222a" style="--d:#19e3ff"></button>
+      <button type="button" class="dot"    role="radio" aria-checked="false" aria-label="Rose"      title="Rose"      data-c="#ff4d94" data-r="255,77,148"  data-i="#2a0012" style="--d:#ff4d94"></button>
+      <button type="button" class="dot"    role="radio" aria-checked="false" aria-label="Mint"      title="Mint"      data-c="#1fe58a" data-r="31,229,138"  data-i="#00241a" style="--d:#1fe58a"></button>
+      <button type="button" class="dot"    role="radio" aria-checked="false" aria-label="Violet"    title="Violet"    data-c="#a78bfa" data-r="167,139,250" data-i="#140a33" style="--d:#a78bfa"></button>
+      <button type="button" class="dot"    role="radio" aria-checked="false" aria-label="Moonlight" title="Moonlight" data-c="#dbe6ff" data-r="219,230,255" data-i="#0c1426" style="--d:#dbe6ff"></button>
+    </div>
+  </header>
+
+  <main class="main">
+    <!-- the lamp: click it (or press Enter) to switch the light on / off -->
+    <div class="stage">
+      <svg class="lamp" id="lamp" viewBox="0 0 300 420" role="button" tabindex="0" aria-label="Switch the lamp on or off" aria-pressed="true">
+        <defs>
+          <linearGradient id="mt" x1="0" x2="1"><stop offset="0" stop-color="#454e5e"/><stop offset="1" stop-color="#1b2029"/></linearGradient>
+          <linearGradient id="sh" x1="0" x2="1"><stop offset="0" stop-color="#3b4452"/><stop offset=".55" stop-color="#232a35"/><stop offset="1" stop-color="#141920"/></linearGradient>
+          <linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop class="lc-stop" offset="0" style="stop-opacity:.62"/><stop class="lc-stop" offset="1" style="stop-opacity:0"/></linearGradient>
+          <radialGradient id="fg"><stop class="lc-stop" offset="0" style="stop-opacity:.5"/><stop class="lc-stop" offset="1" style="stop-opacity:0"/></radialGradient>
+          <radialGradient id="bg"><stop class="lc-stop" offset="0" style="stop-opacity:.95"/><stop class="lc-stop" offset="1" style="stop-opacity:0"/></radialGradient>
+          <filter id="bl" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="7"/></filter>
+        </defs>
+        <polygon class="cone" points="104,136 226,136 345,412 -45,412" fill="url(#cg)" filter="url(#bl)"/>
+        <ellipse class="floor" cx="150" cy="398" rx="165" ry="24" fill="url(#fg)"/>
+        <!-- base and arms -->
+        <ellipse cx="150" cy="400" rx="64" ry="12" fill="#12161c"/>
+        <ellipse cx="150" cy="394" rx="64" ry="12" fill="url(#mt)"/>
+        <ellipse cx="150" cy="391" rx="40" ry="6" fill="#2a313c"/>
+        <line x1="150" y1="390" x2="112" y2="250" stroke="#2a313c" stroke-width="9" stroke-linecap="round"/>
+        <line x1="147" y1="388" x2="109" y2="250" stroke="#4d576a" stroke-width="1.6" stroke-linecap="round"/>
+        <line x1="112" y1="250" x2="104" y2="120" stroke="#2a313c" stroke-width="8" stroke-linecap="round"/>
+        <line x1="109.5" y1="248" x2="101.5" y2="122" stroke="#4d576a" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="112" cy="250" r="9" fill="#2a313c"/><circle class="lc-fill" cx="112" cy="250" r="3.6"/>
+        <!-- shade -->
+        <path class="shade" d="M98 136 C98 88 128 60 165 60 C202 60 232 88 232 136 Z" fill="url(#sh)" stroke="#0c1015" stroke-width="1.5"/>
+        <path d="M110 130 C110 96 132 72 165 70" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="3" stroke-linecap="round"/>
+        <path class="lc-stroke" d="M104 128 C104 94 128 66 165 66 C202 66 226 94 226 128" fill="none" stroke-width="1.6" opacity=".55"/>
+        <ellipse cx="165" cy="136" rx="67" ry="9" fill="#0b0e13"/>
+        <ellipse class="lc-fill rimlit" cx="165" cy="136" rx="58" ry="6" opacity=".92"/>
+        <circle cx="104" cy="120" r="7.5" fill="#2a313c"/><circle class="lc-fill" cx="104" cy="120" r="3"/>
+        <!-- bulb -->
+        <circle class="bglow" cx="165" cy="142" r="40" fill="url(#bg)" filter="url(#bl)"/>
+        <circle class="bulb lc-fill" cx="165" cy="141" r="10"/>
+        <!-- pull cord -->
+        <g class="cord"><line x1="222" y1="140" x2="222" y2="178" stroke="#8591a4" stroke-width="1.6"/><circle class="lc-fill" cx="222" cy="182" r="5.5"/></g>
+      </svg>
+    </div>
+
+    <section class="card" id="card">
+      <div class="brand"><img src="assets/logo.png" alt=""><b>Nagarjuna Tech Academy</b></div>
+
+
+      <form id="f" autocomplete="on">
+        <label class="vh" for="u">Reg No or Username</label>
+        <span class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <input id="u" required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="Reg No / Username"></span>
+        <label class="vh" for="p">Password</label>
+        <span class="fi pw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <input id="p" type="password" required autocomplete="current-password" placeholder="Password">
+          <button type="button" class="eye" id="eye" aria-label="Show password"></button></span>
+        <div class="row2"><a class="lnk" id="fp" href="#">Forgot password?</a></div>
+        <p class="msg bad" id="em" role="alert" hidden></p>
+        <button class="go" id="go" type="submit">Sign in
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+      </form>
+
+      <form id="g" autocomplete="off" hidden>
+        <a class="back" id="bk" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Back</a>
+        <label class="vh" for="rg">Reg No</label>
+        <span class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <input id="rg" required maxlength="15" autocapitalize="characters" spellcheck="false" placeholder="Reg No"></span>
+        <p class="msg" id="gm" hidden></p>
+        <button class="go" id="gr" type="submit">Reset password</button>
+      </form>
+    </section>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+if (tok()) location.href = page('dashboard');
+
+/* ---------- floating dust inside the light ---------- */
+const dust = { on: true, color: '255,179,61', ox: 0, oy: 0, k: 1 }, cv = $('#dust'), cx = cv.getContext('2d'), still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const lamp = $('#lamp');
+let P = [], W = 0, H = 0;
+function spawn(any) {                                                    // a particle somewhere inside the light cone (rim -> lamp base)
+  const t = Math.random() * (any ? 1 : .12), half = dust.k * (61 + t * 134);
+  return { x: dust.ox + (Math.random() * 2 - 1) * half, y: dust.oy + t * 276 * dust.k, r: Math.random() * 1.6 + .5, vx: (Math.random() - .5) * .12, vy: Math.random() * .16 + .03, a: Math.random() * 6.28 };
+}
+function dustSize() {
+  const dpr = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight; cv.width = W * dpr; cv.height = H * dpr; cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const r = lamp.getBoundingClientRect(), k = r.height / 420;
+  dust.ox = r.left + r.width * (165 / 300); dust.oy = r.top + 136 * k; dust.k = k;       // the light source = the lamp rim
+  P = Array.from({ length: W < 600 ? 22 : 40 }, () => spawn(true));
+}
+function tick() {
+  cx.clearRect(0, 0, W, H);
+  if (dust.on && !document.hidden) P.forEach((p, i) => {
+    p.x += p.vx; p.y += p.vy; p.a += .02;
+    const t = (p.y - dust.oy) / (276 * dust.k), half = dust.k * (61 + t * 134);
+    if (t > 1 || t < 0 || Math.abs(p.x - dust.ox) > half) { P[i] = spawn(false); return; }
+    cx.fillStyle = 'rgba(' + dust.color + ',' + ((.18 + .3 * Math.abs(Math.sin(p.a))) * (1 - t * .6)).toFixed(3) + ')'; cx.beginPath(); cx.arc(p.x, p.y, p.r, 0, 6.283); cx.fill();
+  });
+  if (!still) requestAnimationFrame(tick);
+}
+addEventListener('resize', dustSize);
+addEventListener('load', () => { dustSize(); tick(); });
+
+/* ---------- lamp: color, on / off ---------- */
+const root = document.body, dots = [...document.querySelectorAll('.dot')];
+function setColor(d) {
+  root.style.setProperty('--lc', d.dataset.c); root.style.setProperty('--lr', d.dataset.r); root.style.setProperty('--li', d.dataset.i);
+  dots.forEach(x => { const on = x == d; x.classList.toggle('on', on); x.setAttribute('aria-checked', on); });
+  try { localStorage.ng_lamp = d.getAttribute('aria-label'); } catch (e) {}
+  dust.color = d.dataset.r;
+}
+function setLight(on) {
+  root.classList.toggle('off', !on); lamp.setAttribute('aria-pressed', on); dust.on = on;
+  lamp.classList.remove('flick'); if (on) { void lamp.getBoundingClientRect(); lamp.classList.add('flick'); }
+}
+dots.forEach(d => d.onclick = () => { setColor(d); setLight(true); });
+lamp.onclick = () => setLight(root.classList.contains('off'));
+lamp.onkeydown = e => { if (e.key == 'Enter' || e.key == ' ') { e.preventDefault(); lamp.click(); } };
+let saved = null; try { saved = localStorage.ng_lamp; } catch (e) {}
+setColor(dots.find(d => d.getAttribute('aria-label') == saved) || dots[0]);
+
+/* ---------- top bar ---------- */
+$('#apk').href = APK_URL;
+$('#rfi').innerHTML = REFRESH_ICO; $('#rf').onclick = e => hardRefresh(e.currentTarget);
+
+/* ---------- show / hide password ---------- */
+const EYE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
+  EYE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+$('#eye').innerHTML = EYE;
+$('#eye').onclick = () => { const s = $('#p').type == 'password'; $('#p').type = s ? 'text' : 'password'; $('#eye').innerHTML = s ? EYE_OFF : EYE; $('#eye').setAttribute('aria-label', s ? 'Hide password' : 'Show password'); };
+
+/* ---------- one login for everybody (student, CR and admin): the database decides who you are ---------- */
+const err = m => { $('#em').hidden = !m; $('#em').textContent = m || ''; };
+const show = id => { $('#f').hidden = id != 'f'; $('#g').hidden = id != 'g'; };
+
+/* ---------- sign in (same database function as before: unified_login) ---------- */
+$('#f').onsubmit = async e => {
+  e.preventDefault(); err(''); const b = $('#go'); b.disabled = true;
+  try {
+    const r = await rpc('unified_login', { u: $('#u').value.trim(), p: $('#p').value });
+    if (!r || r.error) throw new Error((r && r.error) || 'Login failed');
+    localStorage.ng_tok = r.token; localStorage.ng_role = r.role; localStorage.ng_name = r.name; localStorage.ng_sub = r.sub; if (r.photo) localStorage.ng_photo = r.photo; else delete localStorage.ng_photo;
+    location.href = page('dashboard');
+  } catch (x) { err(x.message || String(x)); b.disabled = false; }
+};
+
+/* ---------- forgot password: Reg No only -> the password becomes the Reg No again ---------- */
+$('#fp').onclick = e => { e.preventDefault(); $('#gm').hidden = true; $('#rg').value = $('#u').value.trim().toUpperCase(); show('g'); };
+$('#bk').onclick = e => { e.preventDefault(); show('f'); };
+$('#g').onsubmit = e => {
+  e.preventDefault();
+  run(async () => {
+    const rg = $('#rg').value.trim().toUpperCase();
+    const r = await rpc('forgot_password', { rg });
+    if (!r || r.error) throw new Error((r && r.error) || 'Could not reset the password');
+    $('#gm').hidden = false; $('#gm').textContent = 'Done. Your password is now ' + rg + '.';
+    $('#u').value = rg; $('#p').value = '';
+  }, $('#gr'));
+};
+</script>
+</body>
+</html>

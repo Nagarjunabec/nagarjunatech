@@ -1,0 +1,83 @@
+SQL FILES  -  Nagarjuna Tech Academy
+=====================================
+Open Supabase > SQL Editor > New query. Paste a WHOLE file, press Run, wait for "Success".
+Run one file at a time, in the order below. After each file you may see "Success. No rows returned" - that is normal.
+
+CASE A - NEW or EMPTY project  (or you want to start again from zero; ALL DATA IS DELETED)
+   Run ONE file:   00_ALL_IN_ONE_new_install.sql
+   (v36: it is ONE single file with EVERYTHING: tables, functions, admin, notices / lab programs, lab batches and all marks features
+    up to v30. Nothing else is needed. The numbered files 01 ... 16 below are only for updating an existing database.)
+
+CASE B - project already running v12 / v13 / v14 / v15 / v16 with data you want to keep
+   (already ran these before and only want the newest functions? Run just 02_functions.sql again.)
+   1. 04_update_existing_database.sql
+   2. 02_functions.sql
+   3. 03_admin_seed.sql
+   4. optional: 05_optional_passwords_to_regno.sql   (sets ALL student passwords back to the Reg No)
+
+CASE C - already on v19 and you only want the new SYLLABUS + LESSON PLAN tabs (keeps all data)
+   Run ONE file:   06_add_syllabus_lesson_plan.sql
+
+CASE D - already running (v23 or older) and you want the new SEMESTER + MOBILE + PARENT MOBILE fields and profile photos (keeps all data)
+   Run ONE file:   07_add_semester_mobile_photos.sql
+   (Old students keep working; their semester / mobile / parent mobile are empty until you fill them with Edit.)
+
+CASE E - already running v25 and you want v26 (rich notices, lab drop-downs, marks tables)  (keeps all data)
+   Run, in this order:   1. 08_notice_labs_update.sql   2. 09_marks_tables.sql   3. 10_marks_formula_rules.sql
+
+CASE F - already on v27 and you want v28 (row colors for Lab Marks)  (keeps all data)
+   Run ONE file:   14_marks_row_colors.sql
+   (If you are on an older version, first run the files of the cases above that you have not run yet, then 11, 12, 13 and 14.)
+
+CASE G - already on v28 and you want v29 (description for every Lab Marks column)  (keeps all data)
+   Run ONE file:   15_marks_column_description.sql
+
+CASE H - already on v29 and you want v30 (Batch 1 / Batch 2 for Lab Programs; v31 has no further SQL)  (keeps all data)
+   Run ONE file:   16_lab_batches.sql
+   (Run it BEFORE you post a lab program with v30: the new site sends the batch to lab_add.)
+
+CASE I - already on v30 / v35 and you want v36 (marks Publish button + Timetable)  (keeps all data)
+   Run ONE file:   17_marks_publish_timetable.sql
+   (Old Theory / Lab marks sheets stay visible to students. NEW sheets are hidden from students until you press Publish.)
+
+CASE J - already on v36 and you want v37 (description in Edit marks + Colors legend, lab marks scroll from the right)  (keeps all data)
+   Run ONE file:   18_marks_description_update.sql
+   (Nothing is lost. If you are on an older version, run the files of the cases above first, then 17 and 18.)
+
+v33 / v32 / v31: no new SQL. If you are already on v30, nothing has to be run.
+
+LOGIN AFTER THE SQL
+   Admin login : nagarjunabec2009@gmail.com
+   Password    : nagarjuna@2009
+
+IF THE LOGIN SAYS "Could not find the function ... in the schema cache"
+   Run 99_refresh_api_cache.sql. It must list 4 names at the bottom. If it lists fewer, 02_functions.sql did not
+   finish: run it again and read the red error message.
+
+IF THE LOGIN SAYS "Invalid ID or password"
+   Run 03_admin_seed.sql again, and check SB_URL / SB_KEY in config.js belong to the same Supabase project.
+
+IF THE LOGIN SAYS "Too many wrong attempts"
+   Run:  delete from login_attempts;
+
+WHAT EACH FILE DOES
+   00_ALL_IN_ONE_new_install.sql  v30: tables + functions + admin + notices / labs + all marks features, in ONE file (deletes everything first)
+   01_tables.sql                  tables only (deletes everything first)
+   02_functions.sql               all functions + permissions; safe to run again, deletes nothing
+   03_admin_seed.sql              the admin login (name T Nagarjuna); safe to run again
+   04_update_existing_database.sql  for an old database: new columns, subject types, new subject codes, removes Leave
+   05_optional_passwords_to_regno.sql  optional, see above
+   06_add_syllabus_lesson_plan.sql  v20: adds Syllabus + Lesson Plan categories (theory / lab); safe to run again
+   07_add_semester_mobile_photos.sql  v24: semester 1-8, mobile, parent mobile for students + photo visibility; safe to run again
+   08_notice_labs_update.sql      v26: notice without time, lab slot + location, new notice_add / lab_add
+   09_marks_tables.sql            v26: Marks Share + Lab Marks tables (mark_sheets, mark_values)
+   10_marks_formula_rules.sql     v26.1: database checks of formula columns (formulas themselves need no table change)
+   11_marks_column_max.sql        v27: maximum marks per column, AAT 1 mandatory, marks above the maximum refused
+   12_marks_absent_ab.sql         v27: a mark may be AB (absent)
+   13_marks_cr_view.sql           v27: a CR can view the marks of all students (view only)
+   14_marks_row_colors.sql        v28: row colors of Lab Marks (admin can change colors and ranges); new column mark_sheets.row_colors
+   15_marks_column_description.sql  v29: description of every Lab Marks column (checked by the database, max 200 characters)
+   16_lab_batches.sql             v30: Batch 1 / Batch 2 of a lab subject (new table lab_batch_members, labs.batch, batches_get / batches_save, new lab_add)
+   17_marks_publish_timetable.sql v36: marks Publish button + Timetable (safe to run again)
+   18_marks_description_update.sql v37: final marks_cols_save with column descriptions (safe to run again)
+   99_refresh_api_cache.sql       fixes "schema cache" errors
