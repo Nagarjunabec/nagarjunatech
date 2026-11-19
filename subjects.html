@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#081633">
+  <meta name="robots" content="noindex">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="assets/icon-192.png">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preload" as="script" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" crossorigin>
+  <link rel="stylesheet" href="style.css?v=47">
+  <script src="config.js?v=47"></script>
+  <script>try{var l=document.createElement("link");l.rel="preconnect";l.href=SB_URL;l.crossOrigin="";document.head.appendChild(l)}catch(e){}</script>
+  <title>Create Subject · Nagarjuna Tech Academy</title>
+</head>
+<body><script>try{var c=localStorage.ng_sbc;if(c=='1'||(c==null&&innerWidth<1100))document.documentElement.classList.add('sbc')}catch(e){}</script>
+<div class="shell">
+  <aside class="side" id="side"><div class="brand"><img src="assets/logo-sm.webp" width="42" height="42" alt=""><div class="bt"><b>Nagarjuna</b><span>Tech Academy</span></div></div><div class="menu-sk"><div class="sk-s"></div><div class="sk-s"></div><div class="sk-s"></div><div class="sk-s"></div><div class="sk-s"></div></div></aside>
+  <div class="scrim" id="scrim"></div>
+  <div class="content">
+    <header class="top" id="top"><b class="top-t">Nagarjuna Tech Academy</b></header>
+    <main id="main"><div class="skel"><div class="sk sk-h"></div><div class="sk sk-p"></div><div class="sk-row"><div class="sk sk-card"></div><div class="sk sk-card"></div><div class="sk sk-card"></div><div class="sk sk-card"></div></div><div class="sk sk-big"></div></div></main>
+    <div class="foot">© Nagarjuna Tech Academy · Developed By T Nagarjuna and Gaddam Venu</div>
+  </div>
+</div>
+<div id="modal" hidden></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" crossorigin></script>
+<script src="app.js?v=47"></script>
+<script src="shell.js?v=47"></script>
+<script>
+const yr = new Date().getFullYear();
+const KIND = { theory: 'Theory only', lab: 'Theory + Lab' };
+let LIST = [];
+const ALLSEC = 'ABCDEFGHIJ'.split('');
+const secOf = s => s.section_list ? String(s.section_list).split(',') : (s.sections > 1 ? ALLSEC.slice(0, s.sections) : []);           // the sections of a subject
+const secBoxes = (id, cur) => '<div class="secbox" id="' + id + '">' + ALLSEC.map(x => '<label class="sbx"><input type="checkbox" value="' + x + '"' + (cur.includes(x) ? ' checked' : '') + '><span>' + x + '</span></label>').join('') + '</div>';
+const secPicked = id => [...document.querySelectorAll('#' + id + ' input:checked')].map(i => i.value);
+async function draw(refetch) {
+  if (refetch) loadSide('create');                                          // refresh the menu and the list together (one call)
+  const list = LIST = await SUBS;
+  $('#main').innerHTML =
+    '<div class="pagehead"><h2>Create Subject</h2></div>' +
+    '<div class="card"><div class="form2">' +
+      '<label class="fld">Subject name<input id="n" maxlength="12" autocapitalize="characters" autocomplete="off"></label>' +
+      '<label class="fld">Academic year starts in<input id="y" type="number" min="2000" max="2100" value="' + yr + '"></label>' +
+      '<label class="fld">Subject type<select id="k"><option value="theory">Theory only</option><option value="lab">Theory + Lab</option></select></label>' +
+      '<div class="fld" style="grid-column:1/-1"><label>Sections <span class="sm">(tick 2 or more, or none)</span></label>' + secBoxes('sc', []) + '</div>' +
+      '<label class="fld">Full name (optional)<input id="f" maxlength="80" autocomplete="off"></label>' +
+      '<div class="fld"><label>Subject code</label><div class="codeprev" id="pv">–</div></div>' +
+    '</div><div class="row"><button class="btn y" id="add">Create subject</button></div></div>' +
+    '<h3 style="margin-top:22px">Created subjects (' + list.length + ')</h3>' +
+    '<div class="grid">' + (list.map(s =>
+      '<div class="card"><div class="sc-top"><span class="pill' + (s.kind == 'lab' ? ' ok' : '') + '">' + KIND[s.kind] + (secOf(s).length > 1 ? ' · Sections ' + secOf(s).join(', ') : '') + '</span><span class="sm">' + s.students + ' students</span></div>' +
+      '<h3 class="sc-code">' + esc(s.code) + '</h3>' + (s.full_name ? '<p class="sm">' + esc(s.full_name) + '</p>' : '') +
+      '<div class="sc-meta"><span><b>' + s.materials + '</b> files</span>' + (s.kind == 'lab' ? '<span><b>' + s.labs + '</b> labs</span>' : '') + '<span><b>' + s.videos + '</b> videos</span><span><b>' + s.notices + '</b> notices</span></div>' +
+      '<div class="row" style="margin:14px 0 0"><a class="btn" href="' + subUrl(s.code) + '">View</a><button class="btn alt" onclick="edit(\'' + s.id + '\')">Edit</button><button class="btn alt" onclick="del(\'' + s.id + '\',\'' + esc(s.code) + '\')">Delete</button></div></div>').join('') ||
+      '<p class="sm">No subjects yet.</p>') + '</div>';
+  const pv = () => { const n = $('#n').value.trim().toUpperCase().replace(/\s+/g, ''); const y = parseInt($('#y').value); $('#pv').textContent = n && y ? n + '-' + y + '-' + (y + 1) : '–'; };
+  $('#n').oninput = pv; $('#y').oninput = pv; pv();
+  $('#add').onclick = e => run(async () => {
+    const a = { n: $('#n').value, y: parseInt($('#y').value), f: $('#f').value, k: $('#k').value }, L = secPicked('sc');
+    if (L.length > 1) a.sl = L.join(',');                                     // 2 or more ticked sections (fewer = no sections, works even before the SQL update)
+    await T('subject_add', a);
+    toast('Subject created'); await draw(true);
+  }, e.target);
+}
+function edit(id) {
+  const s = LIST.find(x => x.id == id);
+  modal('<h3>Edit subject ' + esc(s.code) + '</h3>' +
+    '<label class="fld">Subject name<input id="x1" value="' + esc(s.name) + '" maxlength="12" autocapitalize="characters"></label>' +
+    '<label class="fld">Academic year starts in<input id="x2" type="number" min="2000" max="2100" value="' + s.year + '"></label>' +
+    '<label class="fld">Subject type<select id="x5"><option value="theory"' + (s.kind == 'theory' ? ' selected' : '') + '>Theory only</option><option value="lab"' + (s.kind == 'lab' ? ' selected' : '') + '>Theory + Lab</option></select></label>' +
+    '<div class="fld"><label>Sections <span class="sm">(tick 2 or more, or none)</span></label>' + secBoxes('x6', secOf(s)) + '</div>' +
+    '<label class="fld">Full name (optional)<input id="x3" value="' + esc(s.full_name || '') + '" maxlength="80"></label>' +
+    '<div class="row" style="margin:0"><button class="btn y" id="x4">Save</button><button class="btn alt" onclick="closeModal()">Cancel</button></div>');
+  $('#x4').onclick = e => run(async () => {
+    const v = { n: $('#x1').value, y: parseInt($('#x2').value), f: $('#x3').value, k: $('#x5').value, L: secPicked('x6') };     // read before the popup closes
+    const a = { sid: id, n: v.n, y: v.y, f: v.f, k: v.k }; if (v.L.length > 1) a.sl = v.L.join(','); else if (secOf(s).length > 1) a.sl = '';
+    await T('subject_edit', a);
+    closeModal(); toast('Subject updated'); await draw(true);
+  }, e.target);
+}
+function del(id, code) {
+  if (!confirm('Delete ' + code + ' with all its materials, notices and labs?\nStudents that are only in this subject are deleted too.')) return;
+  run(async () => { await T('subject_del', { sid: id }); toast('Deleted'); await draw(true); });
+}
+if (needLogin(['admin'])) { buildShell('create'); draw().catch(e => toast(e.message, 1)); }
+</script>
+</body>
+</html>

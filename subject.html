@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <script>/* clean URL  /subject/DS-2026-2027/materials : make every relative file (style.css, app.js ...) resolve from the site root */
+  (function () { var p = location.pathname, i = p.indexOf('/subject'); document.write('<base href="' + (i >= 0 ? p.slice(0, i + 1) : p.replace(/[^\/]*$/, '')) + '">'); })();</script>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#081633">
+  <meta name="robots" content="noindex">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="assets/icon-192.png">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preload" as="script" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" crossorigin>
+  <link rel="stylesheet" href="style.css?v=47">
+  <script src="config.js?v=47"></script>
+  <script>try{var l=document.createElement("link");l.rel="preconnect";l.href=SB_URL;l.crossOrigin="";document.head.appendChild(l)}catch(e){}</script>
+  <title>Subject · Nagarjuna Tech Academy</title>
+</head>
+<body><script>try{var c=localStorage.ng_sbc;if(c=='1'||(c==null&&innerWidth<1100))document.documentElement.classList.add('sbc')}catch(e){}</script>
+<div class="shell">
+  <aside class="side" id="side"><div class="brand"><img src="assets/logo-sm.webp" width="42" height="42" alt=""><div class="bt"><b>Nagarjuna</b><span>Tech Academy</span></div></div><div class="menu-sk"><div class="sk-s"></div><div class="sk-s"></div><div class="sk-s"></div><div class="sk-s"></div><div class="sk-s"></div></div></aside>
+  <div class="scrim" id="scrim"></div>
+  <div class="content">
+    <header class="top" id="top"><b class="top-t">Nagarjuna Tech Academy</b></header>
+    <main id="main"><div class="skel"><div class="sk sk-h"></div><div class="sk sk-p"></div><div class="sk-row"><div class="sk sk-card"></div><div class="sk sk-card"></div><div class="sk sk-card"></div><div class="sk sk-card"></div></div><div class="sk sk-big"></div></div></main>
+    <div class="foot">© Nagarjuna Tech Academy · Developed By T Nagarjuna and Gaddam Venu</div>
+  </div>
+</div>
+<div id="modal" hidden></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" crossorigin></script>
+<script src="app.js?v=47"></script>
+<script src="shell.js?v=47"></script>
+<script src="export.js?v=47"></script>
+<script src="marks.js?v=47"></script>
+<script>
+/* URL:  /subject/DS-2026-2027/materials   (old links  subject.html?id=...#materials  still work and are rewritten to the clean form) */
+const URLSUB = (() => {
+  const m = location.pathname.match(/\/subject\/([^\/]+)(?:\/([^\/]+))?\/?$/);
+  const q = new URLSearchParams(location.search);                                   // local form:  subject.html?code=DS-2026-2027&tab=marks
+  return m ? { code: decodeURIComponent(m[1]).toUpperCase(), tab: m[2] || '' } : q.get('code') ? { code: q.get('code').toUpperCase(), tab: q.get('tab') || location.hash.slice(1) } : { id: q.get('id'), tab: location.hash.slice(1) };
+})();
+let sid = null;
+/* the 3 "Drive link" sections share one table (materials); the category decides where a link is shown */
+const SYL_CATS = ['Theory Syllabus','Lab Syllabus'];                              // Syllabus (Lab Syllabus only for Theory + Lab)
+const LP_CATS = ['Theory Lesson Plan','Lab Lesson Plan'];                         // Lesson Plan (Lab Lesson Plan only for Theory + Lab)
+const MAT_CATS = ['Unit 1','Unit 2','Unit 3','Unit 4','Unit 5','Unit 6'];        // Materials
+const MARK_CATS = ['Mid 1','Mid 2','AAT1','AAT2'];                                // Marks Share
+const LABSHEET_CATS = ['Lab Marks'];                                             // Lab Sheet (Theory + Lab only)
+const ADM = ROLE == 'admin', STU = ROLE == 'student';
+let C, ST = [], CRS = [], tab = '', showPw = false, q = '';
+/* tabs depend on the subject type:  Theory only = Students, Materials, Video Lessons, Marks Share, Notices
+                                      Theory + Lab = the same + Lab Programs + Lab Sheet  (v20: Students, Syllabus, Lesson Plan come first) */
+const TABIC = { students: 'users', syllabus: 'book', lessonplan: 'list', materials: 'file', videos: 'play', marks: 'table', notices: 'bell', labs: 'flask', labsheet: 'table', crs: 'shield' };
+const SEC = () => hasSec();                                                     // fewer than 2 sections = everything works as before
+const LETTERS = () => secLetters();                                             // the letters ticked for this subject
+let secF = '';                                                                  // Students tab: section filter
+const empty = t => '<div class="empty">' + ico('inbox') + '<p>' + t + '</p></div>';
+const addHead = t => '<summary><span class="sec-ic">' + ico('plus') + '</span>' + t + '</summary>';
+const tabs = () => featsFor(C.subject.kind).map(t => [t[0], t[1]]);               // same list as the sidebar (shell.js)
+
+async function load() {
+  [C, ST, CRS] = await Promise.all([                                          // all calls at once
+    T('subject_content', { sid }),
+    STU ? [] : T('subject_students', { sid }),
+    ADM ? T('cr_list', { sid }) : []
+  ]);
+  draw();
+}
+function draw() {
+  const inCats = c => C.materials.filter(m => c.includes(m.category)).length;
+  const n = { students: ST.length, syllabus: inCats(SYL_CATS), lessonplan: inCats(LP_CATS), materials: inCats(MAT_CATS), marks: '', labsheet: '', notices: C.notices.length, labs: C.labs.length, videos: C.videos.length, crs: CRS.length };
+  const TABS = tabs();
+  if (!tab || !TABS.some(t => t[0] == tab)) tab = URLSUB.tab || '';
+  if (!TABS.some(t => t[0] == tab)) tab = TABS[0][0];
+  $('#main').innerHTML = '<div id="pane"></div>';                        // the features are in the sidebar now
+  sideTab(tab, n);
+  V[tab]();
+  urlSync();
+}
+function urlSync() {                         // keep the address bar clean:  /subject/DS-2026-2027/materials
+  if (!/^https?:/.test(location.protocol)) return;
+  try { history.replaceState(null, '', subUrl(C.subject.code, tab)); document.title = C.subject.code + ' · Nagarjuna Tech Academy'; } catch (e) {}
+}
+function go(t) { tab = t; draw(); }
+
+/* e-mail: ONLY when the admin posts content (material / lab / video / notice) -> every student of the subject gets one e-mail. */
+const sel = (id, arr, cur) => '<select id="' + id + '">' + arr.map(v => '<option' + (v == cur ? ' selected' : '') + '>' + v + '</option>').join('') + '</select>';
+
+function shareView(cats, L) {
+  if (C.subject.kind != 'lab') cats = cats.filter(c => !/^Lab /.test(c));   // Lab Syllabus / Lab Lesson Plan only for Theory + Lab
+  const by = {}; C.materials.filter(m => cats.includes(m.category)).forEach(m => (by[m.category] = by[m.category] || []).push(m));
+  $('#pane').innerHTML =
+    (ADM ? '<details class="card addc"' + (Object.keys(by).length ? '' : ' open') + '>' + addHead(L.add) + '<div style="margin-top:14px"></div>' +
+      '<div class="mhead"><span>Category</span><span>Title</span><span>Drive link</span><span></span></div><div id="mrows"></div>' +
+      '<div class="row"><button class="btn alt" id="mr">+ Add another row</button></div>' +
+      '<div class="row"><button class="btn y" id="mp">' + L.post + '</button></div></details>' : '') +
+    (cats.filter(c => by[c]).map((c, i) => '<div class="sec"><span class="sec-ic tone' + (i % 5) + '">' + ico('file') + '</span><h3>' + c + '</h3><span class="pill">' + by[c].length + '</span></div><div class="card lst">' +
+      by[c].map(m => '<div class="li"><div class="li-m"><span class="fi tone' + (i % 5) + '">' + ico('file') + '</span><div class="li-t"><b>' + esc(m.title) + '</b><span class="sm">' + fmtDate(m.created_at) + '</span></div></div><div class="act">' +
+        '<button class="btn" onclick="viewDoc(\'' + m.id + '\')">View</button>' +
+        (ADM ? '<a class="btn alt" href="' + esc(m.link) + '" target="_blank" rel="noopener">Open in Drive</a>' : '') +
+        (ADM ? '<button class="btn alt" onclick="delItem(\'material_del\',\'' + m.id + '\')">Delete</button>' : '') + '</div></div>').join('') + '</div>').join('') ||
+      empty(L.none));
+  if (ADM) {
+    const addRow = () => { const d = document.createElement('div'); d.className = 'mrow';
+      d.innerHTML = sel('', cats).replace('id=""', 'class="mc"') + '<input class="mt" aria-label="Title" placeholder="Title" autocomplete="off"><input class="ml" type="url" aria-label="Drive link" placeholder="Drive link" autocomplete="off">' +
+        '<button type="button" class="btn alt xs" aria-label="Remove row" onclick="this.parentNode.remove()">✕</button>'; $('#mrows').append(d); };
+    addRow(); $('#mr').onclick = addRow;
+    $('#mp').onclick = e => run(async () => {
+      const rows = [...document.querySelectorAll('.mrow')].map(r => ({ category: r.querySelector('.mc').value, title: r.querySelector('.mt').value, link: r.querySelector('.ml').value })).filter(r => r.link.trim());
+      if (!rows.length) throw Error('Paste at least one Drive link');
+      await T('material_add', { sid, rw: rows });
+      toast(L.done); await load();
+    }, e.target);
+  }
+}
+
+const V = {
+/* ===================== STUDENTS (admin + CR) ===================== */
+students() {
+  $('#pane').innerHTML =
+    '<details class="card addc"' + (ST.length ? '' : ' open') + '>' + addHead('Add student') + '<div class="form2" style="margin-top:14px">' +
+      '<label class="fld">Reg No (5-15 letters/digits)<input id="rg" maxlength="15" autocapitalize="characters" autocomplete="off"></label>' +
+      '<label class="fld">Name<input id="nm" maxlength="80" autocomplete="off"></label>' +
+      '<label class="fld">Email<input id="ea" type="email" autocomplete="off"></label>' +
+      '<label class="fld">Year<select id="yr"><option>1</option><option>2</option><option>3</option><option>4</option></select></label>' +
+      '<label class="fld">Semester<select id="sm">' + [1, 2, 3, 4, 5, 6, 7, 8].map(v => '<option>' + v + '</option>').join('') + '</select></label>' +
+      '<label class="fld">Student mobile number<input id="mb" type="tel" inputmode="numeric" maxlength="13" autocomplete="off" placeholder="10 digits"></label>' +
+      '<label class="fld">Parent mobile number<input id="pm" type="tel" inputmode="numeric" maxlength="13" autocomplete="off" placeholder="10 digits"></label>' +
+      '<label class="fld">Password<input id="pwd" autocomplete="off" placeholder="empty = Reg No"></label>' +
+      (SEC() ? '<label class="fld">Section<select id="scs"><option value="">Choose</option>' + LETTERS().map(x => '<option>' + x + '</option>').join('') + '</select></label>' : '') +
+    '</div>' +
+    '<div class="row"><button class="btn y" id="add">Add student</button></div>' +
+    '<details open><summary>Upload students from Excel</summary><p class="sm">Columns: <b>RegNo, Name, Email, Year, Semester, Mobile, ParentMobile, Password' + (SEC() ? ', Section' : '') + '</b></p>' +
+      '<div class="row"><input type="file" id="xf" accept=".xlsx,.xls,.csv" aria-label="Excel file"><button class="btn" id="xi">Upload and add</button><button class="btn alt" id="xt">Download Excel template</button></div></details>' +
+    '<details><summary>Add many students by typing</summary><p class="sm">One per line: RegNo, Name, Email, Year, Semester, Mobile, ParentMobile, Password' + (SEC() ? ', Section' : '') + '</p>' +
+      '<textarea id="bulk"></textarea><div class="row"><button class="btn" id="addm">Add all</button></div></details></details>' +
+    '<div class="row"><label class="fld">Search<input id="sq" autocomplete="off"></label>' +
+      (SEC() ? '<label class="fld" style="max-width:170px">Section<select id="sf"><option value="">All</option>' + LETTERS().map(x => '<option' + (secF == x ? ' selected' : '') + '>' + x + '</option>').join('') + '<option value="-"' + (secF == '-' ? ' selected' : '') + '>No section</option></select></label>' : '') +
+      (ADM ? '<button class="btn alt" id="tp">Show passwords</button>' : '') + '</div>' +
+    (ADM ? '<div class="row"><b>Download logins:</b><button class="btn alt" id="dx">Excel</button><button class="btn alt" id="dp">PDF</button><button class="btn alt" id="dw">Word</button></div>' : '') +
+    '<div id="stt"></div>';
+  stTable();
+  $('#sq').oninput = e => { q = e.target.value; stTable(); };
+  if ($('#sf')) $('#sf').onchange = e => { secF = e.target.value; stTable(); };
+  $('#add').onclick = e => run(async () => {
+    if (SEC() && !$('#scs').value) throw Error('Choose the section');
+    await addStudents([{ regno: $('#rg').value, name: $('#nm').value, email: $('#ea').value, year: $('#yr').value, semester: $('#sm').value, mobile: $('#mb').value, parent_mobile: $('#pm').value, password: $('#pwd').value, section: SEC() ? $('#scs').value : '' }]);
+  }, e.target);
+  $('#addm').onclick = e => run(async () => {
+    const rows = $('#bulk').value.split('\n').map(l => l.trim()).filter(Boolean).map(l => { const c = l.split(/[,\t]/).map(x => x.trim());
+      return { regno: c[0], name: c[1], email: c[2], year: c[3], semester: c[4], mobile: c[5], parent_mobile: c[6], password: c[7] || '', section: SEC() ? (c[8] || '') : '' }; });
+    if (!rows.length) throw Error('Enter at least one line');
+    await addStudents(rows);
+  }, e.target);
+  $('#xt').onclick = e => run(async () => { await lib(XLSX_URL); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['RegNo', 'Name', 'Email', 'Year', 'Semester', 'Mobile', 'ParentMobile', 'Password'].concat(SEC() ? ['Section'] : [])]), 'Students'); XLSX.writeFile(wb, 'students-template.xlsx'); }, e.target);
+  $('#xi').onclick = e => run(async () => {
+    const f = $('#xf').files[0]; if (!f) throw Error('Choose the Excel file first');
+    await lib(XLSX_URL);
+    const wb = XLSX.read(await f.arrayBuffer()), rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+    const key = h => String(h).toLowerCase().replace(/[^a-z]/g, ''), pick = (r, names) => { for (const h in r) if (names.includes(key(h))) return String(r[h]).trim(); return ''; };
+    const list = rows.map(r => ({ regno: pick(r, ['regno', 'registrationno', 'registerno', 'rollno', 'id']), name: pick(r, ['name', 'studentname']), email: pick(r, ['email', 'mail', 'emailid']),
+      year: pick(r, ['year', 'studyyear']), semester: pick(r, ['semester', 'sem', 'semno']),
+      mobile: pick(r, ['mobile', 'mobileno', 'mobilenumber', 'phone', 'phoneno', 'studentmobile', 'studentmobileno']),
+      parent_mobile: pick(r, ['parentmobile', 'parentmobileno', 'parentmobilenumber', 'parentsmobile', 'parentphone', 'parentphoneno', 'guardianmobile']), password: pick(r, ['password', 'pw']), section: SEC() ? pick(r, ['section', 'sec', 'division']) : '' })).filter(r => r.regno || r.name || r.email);
+    if (!list.length) throw Error('No student rows found. Columns needed: RegNo, Name, Email, Year, Semester, Mobile, ParentMobile (Password optional)');
+    if (!confirm('Add ' + list.length + ' student(s) from this file?')) return;
+    await addStudents(list);
+  }, e.target);
+  if (ADM) {
+    $('#dx').onclick = e => run(() => dl('xlsx'), e.target); $('#dp').onclick = e => run(() => dl('pdf'), e.target); $('#dw').onclick = e => run(() => dl('doc'), e.target);
+    $('#tp').onclick = e => { showPw = !showPw; e.target.textContent = (showPw ? 'Hide' : 'Show') + ' passwords'; stTable(); };
+  }
+},
+
+/* ===================== SYLLABUS / LESSON PLAN / MATERIALS / MARKS SHARE / LAB SHEET (Drive links, same table, different categories) ===================== */
+syllabus() { shareView(SYL_CATS, { add: 'Add syllabus (Google Drive link)' + (C.subject.kind == 'lab' ? ' – Theory Syllabus and Lab Syllabus' : ''), post: 'Post syllabus', none: 'No syllabus posted yet.', what: 'New syllabus', done: 'Syllabus posted' }); },
+lessonplan() { shareView(LP_CATS, { add: 'Add lesson plan (Google Drive link)' + (C.subject.kind == 'lab' ? ' – Theory Lesson Plan and Lab Lesson Plan' : ''), post: 'Post lesson plan', none: 'No lesson plan posted yet.', what: 'New lesson plan', done: 'Lesson plan posted' }); },
+materials() { shareView(MAT_CATS, { add: 'Add materials (Google Drive links)', post: 'Post materials', none: 'No materials posted yet.', what: 'New study material', done: 'Materials posted' }); },
+marks() { run(() => marksView('theory')); },
+labsheet() { run(() => marksView('lab')); },
+
+/* ===================== NOTICES ===================== */
+notices() {
+  $('#pane').innerHTML =
+    (ADM ? '<details class="card addc"' + (C.notices.length ? '' : ' open') + '>' + addHead('Add notice') + '<div class="form2" style="margin-top:14px">' +
+      '<label class="fld">Title<input id="nt" maxlength="120" autocomplete="off"></label>' +
+      '<label class="fld">Date<input id="nd" type="date"></label></div>' +
+      '<div class="fld" style="margin-top:14px"><label id="nilbl">What to do</label>' + rteBar() + '<div id="ni" class="rte-ed rich" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="nilbl"></div></div>' +
+      '<div class="fld" style="margin-top:14px"><label>E-mail this notice to</label><div class="row" style="margin:4px 0 8px"><label class="chk"><input type="radio" name="nto" value="all" checked> All students</label><label class="chk"><input type="radio" name="nto" value="sel"> Specific students</label></div>' +
+        '<div id="nsel" hidden><div class="row" style="margin:0 0 6px"><input id="nsq" placeholder="Search Reg No / name" style="max-width:260px"><button type="button" class="btn alt" id="nsa">Select all</button><button type="button" class="btn alt" id="nsn">Clear</button></div>' +
+        '<div class="pick">' + (ST.map(s => '<label class="chk nsr" data-q="' + esc((s.regno + ' ' + s.name).toLowerCase()) + '"><input type="checkbox" class="nsc" value="' + esc(s.regno) + '"' + (/^\S+@\S+\.\S+$/.test(s.email || '') ? '' : ' disabled') + '><b>' + esc(s.regno) + '</b> ' + esc(s.name) + (/^\S+@\S+\.\S+$/.test(s.email || '') ? '' : ' <small>(no e-mail)</small>') + '</label>').join('') || '<p class="sm">No students in this subject yet.</p>') + '</div>' +
+        '</div></div>' +
+      '<div class="row"><button class="btn y" id="np">Post notice</button></div></details>' : '') +
+    (C.notices.map(n => '<div class="card item notice"><div class="li"><div class="li-m"><span class="fi tone1">' + ico('bell') + '</span><div class="li-t"><h3 style="margin:0">' + esc(n.title) + '</h3>' +
+      (n.due_date ? '<span class="pill wait">' + fmtDate(n.due_date) + '</span> ' : '') + '<span class="sm">Posted ' + fmtDT(n.created_at) + '</span></div></div>' +
+      (ADM ? '<div class="act"><button class="btn alt" onclick="delItem(\'notice_del\',\'' + n.id + '\')">Delete</button></div>' : '') + '</div>' +
+      (n.message ? '<div class="rich" style="margin-top:10px">' + richHtml(n.message) + '</div>' : '') + '</div>').join('') || empty('No notices yet.'));
+  if (ADM) {
+    rteInit();
+    document.querySelectorAll('input[name=nto]').forEach(r => r.onchange = () => $('#nsel').hidden = document.querySelector('input[name=nto]:checked').value != 'sel');
+    $('#nsq').oninput = () => { const v = $('#nsq').value.trim().toLowerCase(); document.querySelectorAll('.nsr').forEach(l => l.hidden = v && !l.dataset.q.includes(v)); };
+    $('#nsa').onclick = () => document.querySelectorAll('.nsr:not([hidden]) .nsc:not(:disabled)').forEach(c => c.checked = true);
+    $('#nsn').onclick = () => document.querySelectorAll('.nsc').forEach(c => c.checked = false);
+    $('#np').onclick = e => run(async () => {
+      const t = $('#nt').value.trim(), d = $('#nd').value, ed = $('#ni'), html = cleanHtml(ed.innerHTML), plain = ed.textContent.trim();
+      const only = document.querySelector('input[name=nto]:checked').value == 'sel' ? [...document.querySelectorAll('.nsc:checked')].map(c => c.value) : null;   // null = all students
+      if (only && !only.length) throw Error('Tick at least one student for the e-mail (or choose All students)');
+      const m = plain ? html : '';
+      await T('notice_add', { sid, ti: t, msg: m, d });
+      toast('Notice posted'); await load();
+      const body = (d ? '<p><b>Date:</b> ' + esc(fmtDate(d)) + '</p>' : '') + m;
+      toast('Notice posted' + await mailPosted(sid, C.subject.code + ' – new notice: ' + t, (d ? 'Date: ' + fmtDate(d) + '\n\n' : '') + htmlText(m), 'Notice', body, only));
+    }, $('#np'));
+  }
+},
+
+/* ===================== LAB PROGRAMS (Title + Drive link + Purpose, shared with every student of the subject) ===================== */
+labs() {
+  const list = C.labs.map((l, ix) => ({ l, ix })).sort((x, y) => String(y.l.created_at).localeCompare(String(x.l.created_at)));
+  $('#pane').innerHTML =
+    (ADM ? '<details class="card addc"' + (list.length ? '' : ' open') + '>' + addHead('Add lab program (Drive link)') +
+      '<div class="form2" style="margin-top:14px"><label class="fld">Title<input id="lt" maxlength="120" autocomplete="off"></label>' +
+      '<label class="fld">Drive link (optional)<input id="ll" type="url" placeholder="https://" autocomplete="off"></label></div>' +
+      '<p class="sm" style="margin:10px 0 0">Fill the Drive link, the Purpose, or both.</p>' +
+      '<div class="fld" style="margin-top:14px"><label id="nilbl">Purpose (optional)</label>' + rteBar() + '<div id="ni" class="rte-ed rich" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="nilbl"></div></div>' +
+      '<div class="row"><button class="btn y" id="lp">Post lab program</button></div></details>' : '') +
+    (list.map(({ l, ix }) => '<div class="card item lcard"><div class="li"><div class="li-m"><span class="fi tone2">' + ico('flask') + '</span><div class="li-t"><h3 style="margin:0">' +
+      (l.exp_no ? 'Lab ' + esc(String(l.exp_no).replace(/^(lab|exp)\s*/i, '')) + ' – ' : '') + esc(l.title) + '</h3>' +
+      '<span class="sm">' + (l.lab_date ? fmtDate(l.lab_date) + ' · ' : '') + 'Posted ' + fmtDT(l.created_at) + '</span></div></div><div class="act">' +
+      (l.link ? '<a class="btn" href="' + esc(l.link) + '" target="_blank" rel="noopener">Open Drive link</a>' : '') +
+      (l.program ? '<button class="btn alt" onclick="copyProg(' + ix + ')">Copy program</button>' : '') +
+      (ADM ? '<button class="btn alt" onclick="delItem(\'lab_del\',\'' + l.id + '\')">Delete</button>' : '') + '</div></div>' +
+      (l.task ? '<div class="rich" style="margin-top:12px"><b>Purpose</b><div>' + richHtml(l.task) + '</div></div>' : '') +
+      (l.program ? '<pre class="code">' + esc(l.program) + '</pre>' : '') + '</div>').join('') || empty('No lab programs yet.'));
+  if (!ADM || !$('#lp')) return;
+  rteInit();
+  $('#lp').onclick = e => run(async () => {
+    const t = $('#lt').value.trim(), l = $('#ll').value.trim(), ed = $('#ni'), m = ed.textContent.trim() ? cleanHtml(ed.innerHTML) : '';
+    if (!t) throw Error('Enter the title');
+    if (l && !/^https?:\/\/\S+$/i.test(l)) throw Error('The Drive link must start with https://');
+    if (!l && !m) throw Error('Give a Drive link or a purpose (at least one of them)');
+    try { await T('lab_share', { sid, ti: t, lk: l, pu: m }); }
+    catch (er) { throw /lab_share|schema cache/i.test(er.message || '') ? Error('Run the SQL files 19_lab_programs_drive.sql and 20_sections_lab_purpose.sql once in Supabase (see README), then try again.') : er; }
+    await load();
+    toast('Lab program posted' + await mailPosted(sid, C.subject.code + ' – Lab program: ' + t, 'New lab program: ' + t + (m ? '\n\nPurpose:\n' + htmlText(m) : ''), 'Lab Program', '<p><b>' + esc(t) + '</b></p>' + (m ? '<p><b>Purpose:</b></p>' + m : '')));
+  }, $('#lp'));
+},
+
+/* ===================== VIDEO LESSONS (links) ===================== */
+videos() {
+  $('#pane').innerHTML =
+    (ADM ? '<details class="card addc"' + (C.videos.length ? '' : ' open') + '>' + addHead('Add video lessons (YouTube / Drive / any link)') + '<div style="margin-top:14px"></div>' +
+      '<div id="vrows"></div>' +
+      '<div class="row"><button class="btn alt" id="vr">+ Add another row</button></div>' +
+      '<div class=\"row\"><button class=\"btn y\" id=\"vp\">Post videos</button></div></details>' : '') +
+    (C.videos.length ? '<div class="card lst">' + C.videos.map(v => '<div class="li"><div class="li-m"><span class="fi tone3">' + ico('play') + '</span><div class="li-t"><b>' + esc(v.title) + '</b><span class="sm">' + fmtDT(v.created_at) + '</span></div></div><div class="act">' +
+      '<a class="btn" href="' + esc(v.link) + '" target="_blank" rel="noopener">Watch</a>' +
+      (ADM ? '<button class="btn alt" onclick="delItem(\'video_del\',\'' + v.id + '\')">Delete</button>' : '') + '</div></div>').join('') + '</div>' : empty('No video lessons yet.'));
+  if (ADM) {
+    const addRow = () => { const d = document.createElement('div'); d.className = 'mrow vrow';
+      d.innerHTML = '<label class="vf"><span>Lesson title</span><input class="vt" autocomplete="off" placeholder="e.g. Unit 1 – Introduction"></label><label class="vf"><span>Video link</span><input class="vl" type="url" autocomplete="off" placeholder="https://"></label>' +
+        '<button type="button" class="btn alt xs" aria-label="Remove row" onclick="this.parentNode.remove()">✕</button>'; $('#vrows').append(d); };
+    addRow(); $('#vr').onclick = addRow;
+    $('#vp').onclick = e => run(async () => {
+      const rows = [...document.querySelectorAll('.vrow')].map(r => ({ title: r.querySelector('.vt').value, link: r.querySelector('.vl').value })).filter(r => r.link.trim());
+      if (!rows.length) throw Error('Paste at least one video link');
+      await T('video_add', { sid, rw: rows });
+      toast('Videos posted'); await load();
+      const msg = rows.map(r => '• ' + (r.title.trim() || 'Lesson')).join('\n');
+      toast('Videos posted' + await mailPosted(sid, C.subject.code + ' – new video lesson posted', msg, 'Video Lessons'));
+    }, e.target);
+  }
+},
+
+/* ===================== CR (admin only) ===================== */
+crs() {
+  $('#pane').innerHTML =
+    '<details class="card addc" open>' + addHead('Add CR for this subject') + '<div class="form2" style="margin-top:14px">' +
+      '<label class="fld">CR ID (example: CSE-CR)<input id="cu" maxlength="20" autocapitalize="characters" autocomplete="off"></label>' +
+      '<label class="fld">Name<input id="cn" maxlength="80" autocomplete="off"></label>' +
+      '<label class="fld">Email (optional)<input id="ce" type="email" autocomplete="off"></label>' +
+      '<label class="fld">Password (empty = same as CR ID)<input id="cp" autocomplete="off"></label></div>' +
+    '<div class="row"><button class="btn y" id="ca">Add CR</button></div></details>' +
+    '<div class="tw"><table class="stack"><tr><th>CR ID</th><th>Name</th><th>Email</th><th>Password</th><th></th></tr>' +
+    (CRS.map(c => '<tr><td data-label="CR ID"><b>' + esc(c.username) + '</b></td><td data-label="Name"><span class="nm">' + avatar(c.name || c.username, c.photo, 'sm') + esc(c.name || '') + '</span></td><td data-label="Email">' + esc(c.email || '') + '</td>' +
+      '<td data-label="Password"><code>' + (showPw ? esc(c.pw) : '••••••••') + '</code></td><td class="act"><a onclick="showPw=!showPw;V.crs()">' + (showPw ? 'Hide' : 'View') + '</a><a onclick="editCr(\'' + c.id + '\')">Edit</a><a onclick="resetCr(\'' + c.id + '\')">Reset</a><a onclick="rmCr(\'' + c.id + '\')">Remove</a></td></tr>').join('') ||
+      '<tr><td colspan="5" class="sm">No CR yet.</td></tr>') + '</table></div>';
+  $('#ca').onclick = e => run(async () => {
+    const r = await T('cr_add', { sid, u: $('#cu').value, n: $('#cn').value, e: $('#ce').value, p: $('#cp').value });
+    toast(r.existing ? 'CR already existed - added to this subject' : 'CR added'); await load();
+  }, e.target);
+}
+};
+
+/* ---------- actions ---------- */
+async function addStudents(rows) {
+  const r = await T('students_add', { sid, rw: rows }), msg = [];
+  if (r.added.length) msg.push(r.added.length + ' added');
+  if (r.existing.length) msg.push(r.existing.length + ' already had an account and were added to this subject');
+  if (r.skipped.length) msg.push(r.skipped.length + ' skipped: ' + r.skipped.map(x => x.regno + ' (' + x.why + ')').join('; '));
+  toast(msg.join(' · '), !r.added.length && !r.existing.length);
+  await load();
+}
+function setSec(i, v) { run(async () => { await T('student_section', { sid, ids: [i], sec: v }); toast(v ? 'Section ' + v + ' saved' : 'Section cleared'); await load(); }); }
+function stTable() {
+  const list = ST.filter(s => !secF || (secF == '-' ? !s.section : s.section == secF)).filter(s => !q || (s.regno + ' ' + s.name + ' ' + s.email + ' ' + (s.mobile || '') + ' ' + (s.parent_mobile || '')).toLowerCase().includes(q.toLowerCase()));
+  $('#stt').innerHTML = '<div class="tw"><table class="stack"><tr><th>Reg No</th><th>Name</th><th>Email</th><th>Year</th><th>Sem</th>' + (SEC() ? '<th>Section</th>' : '') + '<th>Mobile</th><th>Parent Mobile</th>' + (ADM ? '<th>Password</th><th></th>' : '') + '</tr>' +
+    (list.map(s => '<tr><td data-label="Reg No"><b>' + esc(s.regno) + '</b></td><td data-label="Name"><span class="nm">' + avatar(s.name, s.photo, 'sm') + esc(s.name) + '</span></td><td data-label="Email">' + esc(s.email) + '</td><td data-label="Year">' + s.year + '</td>' +
+      '<td data-label="Sem">' + (s.semester || '–') + '</td>' + (SEC() ? '<td data-label="Section"><select class="secsel" aria-label="Section" onchange="setSec(\'' + s.id + '\', this.value)"><option value="">–</option>' + LETTERS().map(x => '<option' + (s.section == x ? ' selected' : '') + '>' + x + '</option>').join('') + '</select></td>' : '') + '<td data-label="Mobile">' + esc(s.mobile || '–') + '</td><td data-label="Parent Mobile">' + esc(s.parent_mobile || '–') + '</td>' +
+      (ADM ? '<td data-label="Password"><code>' + (showPw ? esc(s.pw) : '••••••••') + '</code></td>' +
+        '<td class="act"><a onclick="editSt(\'' + s.id + '\')">Edit</a><a onclick="resetSt(\'' + s.id + '\')">Reset</a><a onclick="rmSt(\'' + s.id + '\')">Remove</a></td>' : '') + '</tr>').join('') ||
+      '<tr><td colspan="9" class="sm">No students yet.</td></tr>') + '</table></div>';
+}
+/* ---------- download the logins of this subject: Excel / PDF / Word ---------- */
+const LH = ['Reg No', 'Name', 'Email', 'Year', 'Semester', 'Mobile', 'Parent Mobile', 'Password'];
+const loginRows = () => { if (!ST.length) throw Error('No students in this subject yet'); return ST.map(s => [s.regno, s.name, s.email, String(s.year), String(s.semester || ''), s.mobile || '', s.parent_mobile || '', s.pw].concat(SEC() ? [s.section || ''] : [])); };
+const dl = kind => exportTable(kind, LH.concat(SEC() ? ['Section'] : []), loginRows(), C.subject.code + ' – student logins', C.subject.code + '-logins');
+const stu = i => ST.find(s => s.id == i);
+
+function editSt(i) {
+  const s = stu(i);
+  modal('<h3>Edit student</h3>' +
+    '<label class="fld">Reg No<input id="e1" value="' + esc(s.regno) + '" maxlength="15" autocapitalize="characters"></label>' +
+    '<label class="fld">Name<input id="e2" value="' + esc(s.name) + '"></label>' +
+    '<label class="fld">Email<input id="e3" type="email" value="' + esc(s.email) + '"></label>' +
+    '<label class="fld">Year' + sel('e4', [1, 2, 3, 4], s.year) + '</label>' +
+    '<label class="fld">Semester' + sel('e8', (s.semester ? [] : ['']).concat([1, 2, 3, 4, 5, 6, 7, 8]), s.semester) + '</label>' +
+    '<label class="fld">Student mobile number<input id="e9" type="tel" inputmode="numeric" maxlength="13" value="' + esc(s.mobile || '') + '"></label>' +
+    '<label class="fld">Parent mobile number<input id="e10" type="tel" inputmode="numeric" maxlength="13" value="' + esc(s.parent_mobile || '') + '"></label>' +
+    '<label class="fld">Password<input id="e5" value="' + esc(s.pw) + '"></label>' +
+    '<div class="row" style="margin:0"><button class="btn y" id="e7">Save</button><button class="btn alt" onclick="closeModal()">Cancel</button></div>');
+  $('#e7').onclick = e => run(async () => {
+    /* read every field BEFORE the popup is closed (closing removes the inputs) */
+    const v = { rg: $('#e1').value, n: $('#e2').value, e: $('#e3').value, y: parseInt($('#e4').value), sm: parseInt($('#e8').value), mb: $('#e9').value, pm: $('#e10').value, p: $('#e5').value.trim() };
+    await T('student_edit', { i, rg: v.rg, n: v.n, e: v.e, y: v.y, sm: v.sm, mb: v.mb, pm: v.pm });
+    if (v.p && v.p !== s.pw) await T('student_reset', { i, p: v.p });
+    closeModal(); toast('Saved'); await load();
+  }, e.target);
+}
+function resetSt(i) {
+  const s = stu(i);
+  if (!confirm('Reset the password of ' + s.regno + ' to the Reg No (' + s.regno + ')?')) return;
+  run(async () => { await T('student_reset', { i, p: s.regno }); toast('Password is now ' + s.regno); await load(); });
+}
+function rmSt(i) {
+  const s = stu(i);
+  if (!confirm('Remove ' + s.regno + ' from ' + C.subject.code + '?\nThe account is deleted if the student is in no other subject.')) return;
+  run(async () => { await T('student_remove', { sid, ids: [i] }); toast('Removed'); await load(); });
+}
+function editCr(i) {
+  const c = CRS.find(x => x.id == i);
+  modal('<h3>Edit CR</h3>' +
+    '<label class="fld">CR ID<input id="c1" value="' + esc(c.username) + '" maxlength="20" autocapitalize="characters"></label>' +
+    '<label class="fld">Name<input id="c2" value="' + esc(c.name || '') + '" maxlength="80"></label>' +
+    '<label class="fld">Email (optional)<input id="c3" type="email" value="' + esc(c.email || '') + '"></label>' +
+    '<label class="fld">Password<input id="c4" value="' + esc(c.pw) + '"></label>' +
+    '<div class="row" style="margin:0"><button class="btn y" id="c5">Save</button><button class="btn alt" onclick="closeModal()">Cancel</button></div>');
+  $('#c5').onclick = e => run(async () => {
+    /* read every field BEFORE the popup is closed (closing removes the inputs) */
+    const v = { u: $('#c1').value, n: $('#c2').value, e: $('#c3').value, p: $('#c4').value.trim() };
+    await T('cr_edit', { i, u: v.u, n: v.n, e: v.e, p: v.p });
+    closeModal(); toast('CR saved'); await load();
+  }, e.target);
+}
+function resetCr(i) {
+  const c = CRS.find(x => x.id == i);
+  if (!confirm('Reset the password of ' + c.username + ' to the CR ID (' + c.username + ')?')) return;
+  run(async () => { await T('cr_reset', { i, p: c.username }); toast('Password is now ' + c.username); await load(); });
+}
+function rmCr(i) {
+  if (!confirm('Remove this CR from ' + C.subject.code + '? The CR login is deleted if no other subject is assigned.')) return;
+  run(async () => { await T('cr_remove', { sid, i }); toast('Removed'); await load(); });
+}
+/* ---------- protected viewer: PDF / Word / PPT / Excel Drive links open INSIDE the site (no download, no print, no copy) ---------- */
+function embedUrl(u) {
+  let m = u.match(/docs\.google\.com\/(document|presentation|spreadsheets)\/d\/([\w-]+)/);
+  if (m) return 'https://docs.google.com/' + m[1] + '/d/' + m[2] + '/preview';
+  m = u.match(/drive\.google\.com\/file\/d\/([\w-]+)/) || u.match(/drive\.google\.com\/(?:open|uc)\?(?:[^#]*&)?id=([\w-]+)/);
+  return m ? 'https://drive.google.com/file/d/' + m[1] + '/preview' : '';
+}
+let _vk = null;
+function viewDoc(id) {
+  const m = C.materials.find(x => x.id == id); if (!m) return;
+  const src = embedUrl(m.link);
+  if (!src) { window.open(m.link, '_blank', 'noopener'); return; }          // not a Google Drive link: opens normally
+  const who = (localStorage.ng_name || ROLE || '') + ' · ' + C.subject.code,
+    wm = "url(\"data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="360" height="200"><text x="20" y="110" font-family="Arial" font-size="18" fill="#0a1b45" fill-opacity="0.13" transform="rotate(-24 180 100)">' + who.replace(/[<>&"']/g, '') + '</text></svg>') + "\")";
+  closeViewer();
+  const v = document.createElement('div'); v.id = 'viewer';
+  v.innerHTML = '<div class="vbar"><b>' + esc(m.title) + '</b><button class="btn y" onclick="closeViewer()">Close</button></div>' +
+    '<div class="vwrap"><iframe src="' + src + '" sandbox="allow-scripts allow-same-origin allow-forms" referrerpolicy="no-referrer" allow="fullscreen" title="Document"></iframe>' +
+    '<div class="vblock"></div><div class="vmark" style="background-image:' + wm + '"></div></div>';
+  document.body.append(v); document.body.classList.add('viewing');
+  const stop = e => e.preventDefault();
+  _vk = { stop, key: e => { const k = e.key.toLowerCase(); if (k == 'printscreen' || k == 'escape' && 0 || (e.ctrlKey || e.metaKey) && 'pscaxu'.includes(k)) e.preventDefault(); if (k == 'escape') closeViewer(); } };
+  ['contextmenu', 'copy', 'cut', 'dragstart', 'selectstart'].forEach(t => document.addEventListener(t, _vk.stop));
+  document.addEventListener('keydown', _vk.key);
+}
+function closeViewer() {
+  const v = $('#viewer'); if (v) v.remove(); document.body.classList.remove('viewing');
+  if (_vk) { ['contextmenu', 'copy', 'cut', 'dragstart', 'selectstart'].forEach(t => document.removeEventListener(t, _vk.stop)); document.removeEventListener('keydown', _vk.key); _vk = null; }
+}
+if (ROLE != 'admin') document.body.classList.add('nocopy');                // students / CR: page cannot be printed
+/* ---------- rich text box for notices: bold, italic, underline, alignment, bullets, numbers ---------- */
+function rteBar() {
+  const b = (cmd, label, title, arg) => '<button type="button" class="rb" title="' + title + '" aria-label="' + title + '" onmousedown="event.preventDefault()" onclick="rteCmd(\'' + cmd + '\'' + (arg ? ',\'' + arg + '\'' : '') + ')">' + label + '</button>';
+  return '<div class="rte-bar" role="toolbar" aria-label="Text formatting">' +
+    b('bold', '<b>B</b>', 'Bold') + b('italic', '<i>I</i>', 'Italic') + b('underline', '<u>U</u>', 'Underline') + '<span class="rsep"></span>' +
+    b('justifyLeft', '⬑ Left', 'Align left') + b('justifyCenter', 'Center', 'Align centre') + b('justifyRight', 'Right', 'Align right') + b('justifyFull', 'Justify', 'Justify') + '<span class="rsep"></span>' +
+    b('insertUnorderedList', '• Bullets', 'Bullet list') + b('insertOrderedList', '1. Numbers', 'Numbered list') + '<span class="rsep"></span>' +
+    b('formatBlock', 'Heading', 'Heading', 'H3') + b('formatBlock', 'Normal', 'Normal text', 'P') + b('removeFormat', 'Clear', 'Remove formatting') + '</div>';
+}
+function rteCmd(cmd, arg) { const ed = $('#ni'); if (!ed) return; ed.focus(); document.execCommand(cmd, false, arg || null); }
+function rteInit() {
+  const ed = $('#ni'); if (!ed) return;
+  document.execCommand('defaultParagraphSeparator', false, 'div');
+  ed.addEventListener('paste', e => {                                    // paste as plain text (no foreign styles)
+    e.preventDefault(); document.execCommand('insertText', false, (e.clipboardData || window.clipboardData).getData('text/plain'));
+  });
+}
+
+function copyProg(ix) { navigator.clipboard.writeText(C.labs[ix].program).then(() => toast('Program copied'), () => toast('Could not copy', 1)); }
+function delItem(fn, i) { if (!confirm('Delete this item?')) return; run(async () => { await T(fn, { i }); await load(); }); }
+
+if (needLogin()) {
+  (async () => {
+    const find = list => URLSUB.code ? list.find(x => x.code.toUpperCase() == URLSUB.code) : list.find(x => x.id == URLSUB.id);    // the subject from the address
+    let s = (cachedSubs() || []).find(x => find([x]));                        // visited before: no need to wait for the list
+    if (!s) { window.SUBS_P = T('subjects_list'); s = find(await SUBS_P); }
+    if (!s) { buildShell('dash'); $('#main').innerHTML = '<p class="note bad-note">Subject not found, or it is not assigned to you. <a href="' + page('dashboard') + '">Go to the dashboard</a></p>'; return; }
+    sid = s.id; buildShell('sub:' + s.code);
+    await load();
+  })().catch(e => { $('#main').innerHTML = '<p class="note bad-note">' + esc(e.message) + '</p>'; });
+}
+</script>
+</body>
+</html>

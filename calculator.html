@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0b2a5b">
+  <link rel="icon" href="assets/icon-192.png">
+  <link rel="stylesheet" href="calc.css">
+  <title>R24 and R26 Calculator · Bapatla Engineering College</title>
+</head>
+<body>
+  <main class="calc">
+    <header class="top">
+      <a class="back" href="index.html">← Login</a>
+      <h1>Bapatla Engineering College :: Bapatla</h1>
+      <h2>R24 and R26 Calculator</h2>
+      <p>Internal Marks Calculator (same formulas for R24 and R26)</p>
+    </header>
+
+    <form id="calcform" novalidate>
+      <div class="row6">
+        <div class="field"><label for="aat1">AAT1 (0-10)</label><input type="number" inputmode="decimal" step="any" id="aat1"></div>
+        <div class="field"><label for="aat2">AAT2 (0-10)</label><input type="number" inputmode="decimal" step="any" id="aat2"></div>
+        <div class="field"><label for="mid1">MID1 (0-30)</label><input type="number" inputmode="decimal" step="any" id="mid1"></div>
+        <div class="field"><label for="mid2">MID2 (0-30)</label><input type="number" inputmode="decimal" step="any" id="mid2"></div>
+        <div class="field"><label for="per">Attendance (%)</label><input type="number" inputmode="decimal" step="any" id="per"></div>
+        <button type="submit">Calculate</button>
+      </div>
+    </form>
+
+    <section class="result-wrap" aria-live="polite">
+      <h3>Result</h3>
+      <div id="result" class="result-box">Enter the marks and tap Calculate.</div>
+    </section>
+
+    <footer class="footer">
+      Developed by <b>G.VENU</b><br>
+      <b>Dept of CSE (Programmer)</b>
+    </footer>
+  </main>
+  <script src="calc.js"></script>
+</body>
+</html>

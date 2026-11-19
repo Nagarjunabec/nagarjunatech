@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#081633">
+  <meta name="robots" content="noindex">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="assets/icon-192.png">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preload" as="script" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" crossorigin>
+  <link rel="stylesheet" href="style.css?v=47">
+  <script src="config.js?v=47"></script>
+  <script>try{var l=document.createElement("link");l.rel="preconnect";l.href=SB_URL;l.crossOrigin="";document.head.appendChild(l)}catch(e){}</script>
+  <title>Email · Nagarjuna Tech Academy</title>
+</head>
+<body><script>try{var c=localStorage.ng_sbc;if(c=='1'||(c==null&&innerWidth<1100))document.documentElement.classList.add('sbc')}catch(e){}</script>
+<div class="shell">
+  <aside class="side" id="side"><div class="brand"><img src="assets/logo-sm.webp" width="42" height="42" alt=""><div class="bt"><b>Nagarjuna</b><span>Tech Academy</span></div></div><div class="menu-sk"><div class="sk-s"></div><div class="sk-s"></div><div class="sk-s"></div><div class="sk-s"></div><div class="sk-s"></div></div></aside>
+  <div class="scrim" id="scrim"></div>
+  <div class="content">
+    <header class="top" id="top"><b class="top-t">Nagarjuna Tech Academy</b></header>
+    <main id="main"><div class="skel"><div class="sk sk-h"></div><div class="sk sk-p"></div><div class="sk-row"><div class="sk sk-card"></div><div class="sk sk-card"></div><div class="sk sk-card"></div><div class="sk sk-card"></div></div><div class="sk sk-big"></div></div></main>
+    <div class="foot">© Nagarjuna Tech Academy · Developed By T Nagarjuna and Gaddam Venu</div>
+  </div>
+</div>
+<div id="modal" hidden></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" crossorigin></script>
+<script src="app.js?v=47"></script>
+<script src="shell.js?v=47"></script>
+<script>
+async function draw() {
+  const hist = await T('email_log', { n: 300 });
+  $('#main').innerHTML =
+    '<div class="pagehead"><h2>Email</h2><p>History of messages sent to students.</p></div>' +
+    '<div class="row" style="margin:8px 0"><button class="btn alt" id="dsel">Delete selected</button><button class="btn alt" id="dall">Clear all</button></div>' +
+    '<div class="tw"><table class="stack"><tr><th><input type="checkbox" id="hk" aria-label="Select all"></th><th>Time</th><th>Sent to</th><th>Type</th><th>Subject</th><th>Message</th><th>Status</th></tr>' +
+    (hist.map(h => '<tr><td><input type="checkbox" class="hc" value="' + h.id + '"></td><td data-label="Time">' + new Date(h.created_at).toLocaleString() + '</td><td data-label="Sent to">' + esc(h.to_email) + '</td><td data-label="Type">' + esc(h.kind) +
+      '</td><td data-label="Subject">' + esc(h.subject) + '</td><td data-label="Message">' + (h.message ? '<details><summary>Show</summary><div style="white-space:pre-wrap;margin-top:6px">' + esc(h.message) + '</div></details>' : '') +
+      '</td><td data-label="Status"><span class="pill ' + (h.status == 'sent' ? 'ok' : 'no') + '">' + esc(h.status) + '</span>' + (h.error ? '<div class="sm">' + esc(h.error) + '</div>' : '') + '</td></tr>').join('') ||
+      '<tr><td colspan="7" class="sm">No emails yet</td></tr>') + '</table></div>';
+  $('#hk').onchange = e => document.querySelectorAll('.hc').forEach(c => c.checked = e.target.checked);
+  $('#dsel').onclick = e => run(async () => {
+    const ids = [...document.querySelectorAll('.hc:checked')].map(c => Number(c.value)); if (!ids.length) throw Error('Select rows first');
+    await T('email_log_del', { ids }); await draw();
+  }, e.target);
+  $('#dall').onclick = e => run(async () => { if (!confirm('Delete the whole history?')) return; await T('email_log_clear'); await draw(); }, e.target);
+}
+if (needLogin(['admin'])) { buildShell('email'); draw().catch(e => toast(e.message, 1)); }
+</script>
+</body>
+</html>
