@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#2d3539">
+  <link rel="icon" href="assets/icon-192.png">
+  <title>Formulas · Nagarjuna Tech Academy</title>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f5faf9;color:#222;line-height:1.6;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+    .wrap{max-width:860px;margin:0 auto;background:#fff;min-height:100vh;box-shadow:0 0 16px #2d353922}
+    header{background:linear-gradient(135deg,#1a1f21,#1d6961);color:#fff;padding:16px}
+    header h1{margin:6px 0 2px;font-size:22px} header p{margin:0;color:#e0eeed;font-size:14px}
+    .back{color:#25e7d3;font-weight:700;text-decoration:none;font-size:14px;cursor:pointer;background:none;border:0;padding:0}
+    main{padding:8px 16px 28px}
+    h2{margin:24px 0 8px;font-size:18px;color:#2d3539;border-bottom:2px solid #13ac9d;padding-bottom:4px}
+    code{background:#f4f9f9;border:1px solid #e1dedd;border-radius:6px;padding:2px 6px;font-size:14px;overflow-wrap:anywhere}
+    .ex{display:block;margin:6px 0;padding:8px 10px;white-space:pre-wrap}
+    table{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0}
+    th,td{border:1px solid #e1dedd;padding:7px 9px;text-align:left;vertical-align:top}
+    th{background:#f7fbfa}
+    .note{background:#f4f9f9;border-left:4px solid #13ac9d;padding:8px 12px;border-radius:6px;margin:10px 0}
+    .tw{overflow-x:auto}
+    td:nth-child(2){min-width:190px}
+    .new{display:inline-block;background:#fff1dc;color:#a85a00;border-radius:99px;font-size:11px;font-weight:700;padding:0 7px;margin-left:6px;vertical-align:middle}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <button class="back" id="bk">← Back</button>
+    <h1>Formulas</h1>
+    <p>Theory Marks and Lab Marks</p>
+  </header>
+  <main>
+
+    <h2>1. Writing a formula</h2>
+    <p>Choose <b>Column type → Formula</b> and type it like Excel. A formula starts with <code>=</code> (maximum 300 characters) and is calculated for every student from that student's own row.</p>
+    <div class="tw"><table>
+      <tr><th>Way</th><th>Example</th><th>Meaning</th></tr>
+      <tr><td>By name</td><td><code>[Lab 1]</code></td><td>The column named Lab 1 (capital letters do not matter). Follows the column when it is renamed or moved.</td></tr>
+      <tr><td>By letter</td><td><code>C5</code></td><td>The column with the letter C. A = Reg No, B = Name, C = first column, D = second ... The row number is ignored.</td></tr>
+      <tr><td>Range of letters</td><td><code>C5:H5</code></td><td>All columns from C to H.</td></tr>
+    </table></div>
+    <ul>
+      <li>Operators: <code>+ - * / ^ %</code> (<code>50%</code> means 0.5) and brackets <code>( )</code>.</li>
+      <li>Comparisons: <code>= &lt;&gt; &lt; &gt; &lt;= &gt;=</code>. Text goes inside quotes: <code>"Pass"</code>.</li>
+      <li><b>AB</b> (absent) is ignored like an empty cell: SUM and AVERAGE skip it, and in <code>+ - * /</code> it counts as 0.</li>
+      <li>A formula can use another formula column, but not its own column.</li>
+      <li>Conditions in COUNTIF, SUMIF and AVERAGEIF are written in quotes: <code>"&gt;=10"</code>, <code>"&lt;5"</code>, <code>"&lt;&gt;0"</code>, or just a number such as <code>18</code>.</li>
+    </ul>
+
+    <h2>2. Add up and count</h2>
+    <div class="tw"><table><tr><th>Function</th><th>What it does</th><th>Example</th></tr><tr><td><b>SUM</b></td><td>Adds the numbers (empty and AB are skipped)</td><td><code>=SUM(C5:H5)</code></td></tr><tr><td><b>AVERAGE / AVG</b></td><td>Average of the numbers (empty and AB are not counted)</td><td><code>=AVERAGE([Mid 1],[Mid 2])</code></td></tr><tr><td><b>COUNT</b></td><td>How many numbers are entered</td><td><code>=COUNT(C5:H5)</code></td></tr><tr><td><b>COUNTBLANK</b><span class="new">new</span></td><td>How many cells are empty or AB</td><td><code>=COUNTBLANK(C5:H5)</code></td></tr><tr><td><b>COUNTIF</b><span class="new">new</span></td><td>How many cells fit a condition</td><td><code>=COUNTIF(C5:H5,"&gt;=10")</code><br>columns with 10 or more</td></tr><tr><td><b>SUMIF</b><span class="new">new</span></td><td>Adds only the numbers that fit a condition</td><td><code>=SUMIF(C5:H5,"&gt;=10")</code><br>adds only the marks that are 10 or more</td></tr><tr><td><b>AVERAGEIF</b><span class="new">new</span></td><td>Average of only the numbers that fit a condition</td><td><code>=AVERAGEIF(C5:H5,"&gt;0")</code><br>average of the marks above 0</td></tr><tr><td><b>PRODUCT</b><span class="new">new</span></td><td>Multiplies the numbers</td><td><code>=PRODUCT(2,3,4)</code><br>gives 24</td></tr></table></div>
+    <h2>3. Largest, smallest and best</h2>
+    <div class="tw"><table><tr><th>Function</th><th>What it does</th><th>Example</th></tr><tr><td><b>MAX / MIN</b></td><td>Largest / smallest number</td><td><code>=MAX([Mid 1],[Mid 2])</code></td></tr><tr><td><b>LARGE</b><span class="new">new</span></td><td>The 1st, 2nd, 3rd ... largest number</td><td><code>=LARGE(C5:H5,2)</code><br>2nd largest mark</td></tr><tr><td><b>SMALL</b><span class="new">new</span></td><td>The 1st, 2nd, 3rd ... smallest number</td><td><code>=SMALL(C5:H5,1)</code><br>smallest mark</td></tr><tr><td><b>BEST</b><span class="new">new</span></td><td>Adds the best N marks</td><td><code>=BEST(2,[Mid 1],[Mid 2],[Mid 3])</code><br>marks 20, 25, 15 give 45</td></tr><tr><td><b>BESTAVG</b><span class="new">new</span></td><td>Average of the best N marks</td><td><code>=BESTAVG(2,[Mid 1],[Mid 2],[Mid 3])</code><br>marks 20, 25, 15 give 22.5</td></tr><tr><td><b>MEDIAN</b><span class="new">new</span></td><td>The middle number</td><td><code>=MEDIAN(10,40,20)</code><br>gives 20</td></tr><tr><td><b>MODE</b><span class="new">new</span></td><td>The number that comes most often</td><td><code>=MODE(5,7,7,9)</code><br>gives 7</td></tr><tr><td><b>STDEV</b><span class="new">new</span></td><td>Standard deviation (how spread out the marks are)</td><td><code>=STDEV(10,20,30)</code><br>gives 10</td></tr></table></div>
+    <h2>4. Rounding</h2>
+    <div class="tw"><table><tr><th>Function</th><th>What it does</th><th>Example</th></tr><tr><td><b>ROUND</b></td><td>Rounds to the given decimals (0 if not given)</td><td><code>=ROUND(12.345,1)</code><br>gives 12.3</td></tr><tr><td><b>ROUNDUP / ROUNDDOWN</b></td><td>Rounds up / down</td><td><code>=ROUNDUP(12.1,0)</code><br>gives 13</td></tr><tr><td><b>TRUNC</b><span class="new">new</span></td><td>Cuts the decimals without rounding</td><td><code>=TRUNC(12.98,1)</code><br>gives 12.9</td></tr><tr><td><b>INT</b></td><td>Whole number, rounded down</td><td><code>=INT(12.9)</code><br>gives 12</td></tr><tr><td><b>CEILING / CEIL</b></td><td>Rounds up to a multiple</td><td><code>=CEILING(11.2,0.5)</code><br>gives 11.5</td></tr><tr><td><b>FLOOR</b></td><td>Rounds down to a multiple</td><td><code>=FLOOR(11.8,0.5)</code><br>gives 11.5</td></tr><tr><td><b>MROUND</b><span class="new">new</span></td><td>Rounds to the nearest multiple</td><td><code>=MROUND(13,5)</code><br>gives 15</td></tr></table></div>
+    <h2>5. Maths</h2>
+    <div class="tw"><table><tr><th>Function</th><th>What it does</th><th>Example</th></tr><tr><td><b>ABS</b></td><td>Removes the minus sign</td><td><code>=ABS(-4)</code><br>gives 4</td></tr><tr><td><b>SIGN</b><span class="new">new</span></td><td>1 for a positive, -1 for a negative, 0 for zero</td><td><code>=SIGN(-7)</code><br>gives -1</td></tr><tr><td><b>MOD</b></td><td>Remainder after division</td><td><code>=MOD(17,5)</code><br>gives 2</td></tr><tr><td><b>POWER</b></td><td>Power (same as ^)</td><td><code>=POWER(2,5)</code><br>gives 32</td></tr><tr><td><b>SQRT</b></td><td>Square root</td><td><code>=SQRT(81)</code><br>gives 9</td></tr><tr><td><b>EXP</b><span class="new">new</span></td><td>e raised to a power</td><td><code>=EXP(1)</code><br>gives 2.72</td></tr><tr><td><b>LN</b><span class="new">new</span></td><td>Natural logarithm</td><td><code>=LN(1)</code><br>gives 0</td></tr><tr><td><b>LOG</b><span class="new">new</span></td><td>Logarithm (base 10 if no base is given)</td><td><code>=LOG(8,2)</code><br>gives 3</td></tr><tr><td><b>PI</b><span class="new">new</span></td><td>The number pi</td><td><code>=PI()</code><br>gives 3.14</td></tr></table></div>
+    <h2>6. Marks helpers</h2>
+    <div class="tw"><table><tr><th>Function</th><th>What it does</th><th>Example</th></tr><tr><td><b>OUTOF</b></td><td>The maximum marks fixed for a column</td><td><code>=OUTOF([Lab 1])</code></td></tr><tr><td><b>PERCENT</b><span class="new">new</span></td><td>Percentage of a number out of a total</td><td><code>=PERCENT([Lab 1],OUTOF([Lab 1]))</code><br>18 out of 25 gives 72</td></tr><tr><td><b>BETWEEN</b><span class="new">new</span></td><td>TRUE when a number is between two limits (both included)</td><td><code>=BETWEEN([Mid 1],10,20)</code></td></tr></table></div>
+    <h2>7. Tests and text</h2>
+    <div class="tw"><table><tr><th>Function</th><th>What it does</th><th>Example</th></tr><tr><td><b>IF</b></td><td>If the test is true give the first value, else the second</td><td><code>=IF([Total]&gt;=11,"Pass","Fail")</code></td></tr><tr><td><b>IFS</b><span class="new">new</span></td><td>Checks the tests one by one and gives the value of the first true one</td><td><code>=IFS([Total]&gt;=16,"A",[Total]&gt;=11,"B",TRUE,"C")</code></td></tr><tr><td><b>IFERROR</b><span class="new">new</span></td><td>Gives a second value when the first one is an error</td><td><code>=IFERROR([Lab 1]*100/OUTOF([Lab 1]),0)</code></td></tr><tr><td><b>ISERROR</b><span class="new">new</span></td><td>TRUE when the value is an error</td><td><code>=ISERROR(1/0)</code><br>gives TRUE</td></tr><tr><td><b>AND / OR / NOT</b></td><td>Combine tests</td><td><code>=IF(AND([Lab 1]&gt;=10,[Lab 2]&gt;=10),"Pass","Fail")</code></td></tr><tr><td><b>XOR</b><span class="new">new</span></td><td>TRUE when exactly one of the tests is true</td><td><code>=XOR([Lab 1]&gt;=10,[Lab 2]&gt;=10)</code></td></tr><tr><td><b>TRUE / FALSE</b></td><td>The values yes / no</td><td><code>=IF(TRUE,1,0)</code></td></tr><tr><td><b>CHOOSE</b><span class="new">new</span></td><td>Picks the 1st, 2nd, 3rd ... value from a list</td><td><code>=CHOOSE(2,"A","B","C")</code><br>gives B</td></tr><tr><td><b>CONCAT</b><span class="new">new</span></td><td>Joins text and numbers</td><td><code>=CONCAT("Total: ",[Total])</code></td></tr></table></div>
+    <h2>8. Ready examples</h2>
+    <div class="tw"><table><tr><th>What you want</th><th>Type</th></tr><tr><td>Total of a range of columns</td><td><code>=SUM(C5:H5)</code></td></tr><tr><td>Scale a total (out of 230 → 20, rounded up)</td><td><code>=ROUNDUP(SUM(C5:H5)*20/230,0)</code></td></tr><tr><td>Best 2 of 3 mid marks, out of 30</td><td><code>=BEST(2,[Mid 1],[Mid 2],[Mid 3])</code></td></tr><tr><td>Average of the best 2 of 3</td><td><code>=ROUND(BESTAVG(2,[Mid 1],[Mid 2],[Mid 3]),1)</code></td></tr><tr><td>Percentage of a column that has a maximum</td><td><code>=ROUND(PERCENT([Lab 1],OUTOF([Lab 1])),1)</code></td></tr><tr><td>Pass / Fail</td><td><code>=IF([Total]&gt;=40,"Pass","Fail")</code></td></tr><tr><td>Pass only if every lab has 10 or more</td><td><code>=IF(COUNTIF(C5:H5,"&lt;10")=0,"Pass","Fail")</code></td></tr><tr><td>Grade from a total</td><td><code>=IFS([Total]&gt;=90,"O",[Total]&gt;=80,"A+",[Total]&gt;=70,"A",[Total]&gt;=60,"B+",[Total]&gt;=50,"B",TRUE,"F")</code></td></tr><tr><td>How many labs the student missed (empty or AB)</td><td><code>=COUNTBLANK(C5:H5)</code></td></tr><tr><td>Total of only the labs that are 10 or more</td><td><code>=SUMIF(C5:H5,"&gt;=10")</code></td></tr><tr><td>Show 0 instead of Err when a value is missing</td><td><code>=IFERROR([Total]*100/OUTOF([Total]),0)</code></td></tr><tr><td>Use another formula column</td><td><code>=[Total]*15/100</code></td></tr></table></div>
+
+    <h2>9. Excel download</h2>
+    <p>The downloaded Excel file keeps the formulas as real Excel formulas. <b>BEST, BESTAVG, PERCENT</b> and <b>BETWEEN</b> are written out with normal Excel functions. <b>IFS</b> and <b>CONCAT</b> need Excel 2019 or newer.</p>
+
+    <h2>10. If a formula shows Err or is refused</h2>
+    <ul>
+      <li><b>Err in the table</b>: dividing by zero, a <code>[Name]</code> that no longer exists, a letter that no longer points to the column you meant (after deleting a column), a number out of range (for example LARGE asking for the 4th of 3 marks), or a formula that uses its own column. Wrap it in <code>IFERROR(...,0)</code> to show 0 instead.</li>
+      <li><b>"The formula is not valid"</b>: check the brackets <code>( )</code> and <code>[ ]</code>, the commas, the quotes around text and the spelling of the function name.</li>
+      <li><b>A blank formula cell</b>: no mark is entered yet in that student's row.</li>
+    </ul>
+
+  </main>
+</div>
+<script>
+document.getElementById('bk').onclick = function () { if (history.length > 1 && !window.opener) history.back(); else window.close(); };
+</script>
+</body>
+</html>

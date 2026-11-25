@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Nagarjuna Tech Academy">
+  <defs>
+    <linearGradient id="base" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#191e20"/><stop offset=".55" stop-color="#2b3236"/><stop offset="1" stop-color="#131719"/>
+    </linearGradient>
+    <radialGradient id="glowA" cx=".18" cy=".22" r=".55"><stop offset="0" stop-color="#14b0a1" stop-opacity=".30"/><stop offset="1" stop-color="#14b0a1" stop-opacity="0"/></radialGradient>
+    <radialGradient id="glowB" cx=".86" cy=".82" r=".5"><stop offset="0" stop-color="#15bead" stop-opacity=".32"/><stop offset="1" stop-color="#15bead" stop-opacity="0"/></radialGradient>
+    <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse"><path d="M48 0H0V48" fill="none" stroke="#1be6d1" stroke-opacity=".07" stroke-width="1"/></pattern>
+    <linearGradient id="word" x1="0" x2="1"><stop offset="0" stop-color="#25e7d3" stop-opacity=".22"/><stop offset="1" stop-color="#17cfbd" stop-opacity=".08"/></linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#base)"/>
+  <rect width="1600" height="900" fill="url(#grid)"/>
+  <rect width="1600" height="900" fill="url(#glowA)"/>
+  <rect width="1600" height="900" fill="url(#glowB)"/>
+
+  <!-- circuit traces: left -->
+  <g fill="none" stroke="#16c6b5" stroke-opacity=".34" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M0 210H150L196 164H330L372 206H470"/>
+    <path d="M0 300H96L140 344H260L306 390H430"/>
+    <path d="M0 470H120L168 518H300"/>
+    <path d="M60 0V90L110 140H210"/>
+    <path d="M0 640H88L132 596H250L292 638H380"/>
+  </g>
+  <!-- circuit traces: right -->
+  <g fill="none" stroke="#18dcc8" stroke-opacity=".34" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M1600 180H1450L1404 226H1270L1228 184H1130"/>
+    <path d="M1600 330H1500L1456 286H1340L1296 330H1190"/>
+    <path d="M1600 520H1480L1432 568H1300"/>
+    <path d="M1540 0V80L1490 130H1390"/>
+    <path d="M1600 700H1512L1468 744H1350L1308 702H1220"/>
+  </g>
+  <!-- nodes -->
+  <g fill="#14b0a1">
+    <circle cx="470" cy="206" r="5" opacity=".9"/><circle cx="430" cy="390" r="5" opacity=".8"/><circle cx="300" cy="518" r="5" opacity=".8"/>
+    <circle cx="210" cy="140" r="4" opacity=".8"/><circle cx="380" cy="638" r="5" opacity=".7"/>
+  </g>
+  <g fill="#22e6d3">
+    <circle cx="1130" cy="184" r="5" opacity=".9"/><circle cx="1190" cy="330" r="5" opacity=".8"/><circle cx="1300" cy="568" r="5" opacity=".8"/>
+    <circle cx="1390" cy="130" r="4" opacity=".8"/><circle cx="1220" cy="702" r="5" opacity=".7"/>
+  </g>
+
+  <!-- graduation cap + open book (line icons) -->
+  <g transform="translate(1290 600) scale(2.4)" fill="none" stroke="#9af4eb" stroke-opacity=".28" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M2 18 32 6l30 12-30 12z"/><path d="M14 24v14c0 5 8 9 18 9s18-4 18-9V24"/><path d="M60 19v16"/>
+  </g>
+  <g transform="translate(150 560) scale(2.4)" fill="none" stroke="#9af4eb" stroke-opacity=".26" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M32 12C26 7 15 6 4 8v40c11-2 22-1 28 4 6-5 17-6 28-4V8C49 6 38 7 32 12z"/><path d="M32 12v40"/>
+  </g>
+  <!-- code brackets -->
+  <g fill="none" stroke="#9af4eb" stroke-opacity=".22" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M610 118 560 168l50 50M690 118l50 50-50 50"/><path d="M1040 700l-40 40 40 40M1090 700l40 40-40 40"/>
+  </g>
+
+  <!-- the name, big and soft -->
+  <text x="800" y="800" text-anchor="middle" font-family="'Segoe UI',system-ui,-apple-system,Roboto,Arial,sans-serif" font-size="112" font-weight="800" letter-spacing="2" fill="url(#word)">NAGARJUNA</text>
+  <text x="800" y="868" text-anchor="middle" font-family="'Segoe UI',system-ui,-apple-system,Roboto,Arial,sans-serif" font-size="44" font-weight="700" letter-spacing="26" fill="#25e7d3" fill-opacity=".20">TECH ACADEMY</text>
+</svg>

@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#1a1f21">
+  <meta name="robots" content="noindex">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="assets/icon-192.png">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preload" as="script" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" crossorigin>
+  <link rel="stylesheet" href="style.css?v=52">
+  <script src="config.js?v=52"></script>
+  <script>try{var l=document.createElement("link");l.rel="preconnect";l.href=SB_URL;l.crossOrigin="";document.head.appendChild(l)}catch(e){}</script>
+  <title>Dashboard · Nagarjuna Tech Academy</title>
+</head>
+<body><script>try{var c=localStorage.ng_sbc;if(c=='1'||(c==null&&innerWidth<1100))document.documentElement.classList.add('sbc')}catch(e){}</script>
+<div class="shell">
+  <aside class="side" id="side"><div class="brand"><img src="assets/logo-sm.webp" width="42" height="42" alt=""><div class="bt"><b>Nagarjuna</b><span>Tech Academy</span></div></div><div class="menu-sk"><div class="sk-s"></div><div class="sk-s"></div><div class="sk-s"></div><div class="sk-s"></div><div class="sk-s"></div></div></aside>
+  <div class="scrim" id="scrim"></div>
+  <div class="content">
+    <header class="top" id="top"><b class="top-t">Nagarjuna Tech Academy</b></header>
+    <main id="main"><div class="skel"><div class="sk sk-h"></div><div class="sk sk-p"></div><div class="sk-row"><div class="sk sk-card"></div><div class="sk sk-card"></div><div class="sk sk-card"></div><div class="sk sk-card"></div></div><div class="sk sk-big"></div></div></main>
+    <div class="foot">© Nagarjuna Tech Academy · Developed By T Nagarjuna and Gaddam Venu</div>
+  </div>
+</div>
+<div id="modal" hidden></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" crossorigin></script>
+<script src="app.js?v=52"></script>
+<script src="shell.js?v=52"></script>
+<script>
+/* ---- small calendar (dots = a notice / lab is dated that day) ---- */
+function calendar(el, events, show) {
+  const now = new Date(); let y = now.getFullYear(), m = now.getMonth(), sel = null;
+  const key = (a, b, c) => a + '-' + String(b + 1).padStart(2, '0') + '-' + String(c).padStart(2, '0');
+  const by = {}; events.forEach(e => { const k = String(e.date).slice(0, 10); (by[k] = by[k] || []).push(e); });
+  const tk = key(now.getFullYear(), now.getMonth(), now.getDate()); sel = tk;
+  function draw() {
+    const first = new Date(y, m, 1).getDay(), days = new Date(y, m + 1, 0).getDate();
+    let h = '<div class="cal-h"><button class="cal-b" id="cp" aria-label="Previous month">‹</button><b>' +
+      new Date(y, m, 1).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }) +
+      '</b><button class="cal-b" id="cn" aria-label="Next month">›</button></div><div class="cal-g">' +
+      ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(x => '<i class="dow">' + x + '</i>').join('');
+    for (let i = 0; i < first; i++) h += '<i></i>';
+    for (let i = 1; i <= days; i++) { const k = key(y, m, i);
+      h += '<button class="cal-d' + (k == tk ? ' today' : '') + (by[k] ? ' has' : '') + (k == sel ? ' sel' : '') + '" data-k="' + k + '">' + i + '</button>'; }
+    el.innerHTML = h + '</div>';
+    $('#cp').onclick = () => { if (--m < 0) { m = 11; y--; } draw(); };
+    $('#cn').onclick = () => { if (++m > 11) { m = 0; y++; } draw(); };
+    el.querySelectorAll('.cal-d').forEach(b => b.onclick = () => { sel = b.dataset.k; draw(); });
+    show(sel, by[sel] || []);
+  }
+  draw();
+}
+
+let clockTimer;
+function clock(el) {
+  clearInterval(clockTimer);
+  const t = () => { const n = new Date();
+    el.innerHTML = '<b>' + n.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + '</b><span>' +
+      n.toLocaleDateString('en-IN', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }) + '</span>'; };
+  t(); clockTimer = setInterval(t, 1000);
+}
+
+/* draws the whole dashboard from  d = the dashboard data  and  subs = the subject list */
+function render(d, subs) {
+  const sum = k => subs.reduce((a, s) => a + Number(s[k]), 0);
+  /* every card is a link: admin -> the page that manages it, student / CR -> the subject (or the subject list when there are several) */
+  const one = subs.length == 1 ? subs[0].code : null;
+  const toSub = tab => one ? subUrl(one, tab) : '#subs';
+  const card = (cls, icon, n, label, href) => '<a class="stat" href="' + href + '"><span class="bub ' + cls + '">' + ico(icon) + '</span><div><b>' + n + '</b><span>' + label + '</span></div></a>';
+  const st = d.stats;
+  const cards = ROLE == 'admin'
+    ? card('', 'layers', st.subjects, 'Subjects', page('subjects')) + card('g', 'users', st.students, 'Students', page('students')) +
+      card('', 'book', st.materials, 'Materials & marks', page('subjects')) + card('g', 'flask', st.labs, 'Lab programs', page('subjects')) + card('', 'layers', st.videos, 'Video lessons', page('subjects')) + card('y', 'bell', st.notices, 'Notices', page('subjects')) +
+      card(st.emails_failed ? 'r' : 'g', 'mail', st.emails_sent, 'Emails sent' + (st.emails_failed ? ' · ' + st.emails_failed + ' failed' : ''), page('email'))
+    : card('', 'layers', subs.length, 'My subjects', '#subs') + card('', 'book', sum('materials'), 'Materials & marks', toSub('materials')) + (subs.some(s => s.kind == 'lab') ? card('g', 'flask', sum('labs'), 'Lab programs', toSub('labs')) : '') +
+      card('', 'layers', sum('videos'), 'Video lessons', toSub('videos')) + card('y', 'bell', sum('notices'), 'Notices', toSub('notices'));
+
+  const quick = ROLE == 'admin' ? '<div class="qa">' + [['plus', 'Create Subject', 'Add a new subject', 'subjects'], ['users', 'Students', 'All students and logins', 'students'], ['mail', 'Email', 'Emails sent to students', 'email']].map(x =>
+    '<a class="qa-i" href="' + page(x[3]) + '">' + ico(x[0]) + '<span><b>' + x[1] + '</b><small>' + x[2] + '</small></span></a>').join('') + '</div>' : '';
+  const today = new Date().toISOString().slice(0, 10);
+  const up = d.events.filter(e => String(e.date).slice(0, 10) >= today).slice(0, 8);
+  const hr = new Date().getHours(), hi = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening';
+
+  $('#main').innerHTML =
+    '<div class="hero"><div><h2>' + hi + ', ' + esc(String(localStorage.ng_name || '').split(' ')[0] || 'there') + '</h2><p>' + esc(localStorage.ng_sub || '') + '</p></div><div id="clk" class="clock"></div></div>' +
+    quick + '<div class="stats">' + cards + '</div>' +
+    '<div class="card dnotes"><div class="dn-h"><h3>Notices</h3>' + (ROLE == 'admin' ? '<a class="btn alt" href="' + page('students') + '">View all students</a>' : '') + '</div><div id="dnl"><p class="sm">Loading notices…</p></div></div>' +
+    '<div class="dgrid" style="margin-top:18px">' +
+      '<div class="card"><div id="cal"></div></div>' +
+      '<div class="stack-col"><div class="card"><h3 id="dayh">Today</h3><div id="dayl"></div></div>' +
+        '<div class="card"><h3>Coming up</h3>' + (up.map(e => evRow(e, true)).join('') || '<p class="sm">Nothing scheduled.</p>') + '</div></div>' +
+    '</div>' +
+    '<h3 id="subs" style="margin-top:26px">' + (ROLE == 'admin' ? 'All subjects' : 'My subjects') + '</h3>' +
+    '<div class="grid">' + (subs.map(s =>
+      '<a class="card click" href="' + subUrl(s.code) + '"><div class="sc-top"><span class="pill' + (s.kind == 'lab' ? ' ok' : '') + '">' + (s.kind == 'lab' ? 'Theory + Lab' : 'Theory only') + '</span><span class="sm">' + s.students + ' students</span></div>' +
+      '<h3 class="sc-code">' + esc(s.code) + '</h3>' + (s.full_name ? '<p class="sm">' + esc(s.full_name) + '</p>' : '') +
+      '<div class="sc-meta"><span><b>' + s.materials + '</b> files</span>' + (s.kind == 'lab' ? '<span><b>' + s.labs + '</b> labs</span>' : '') + '<span><b>' + s.videos + '</b> videos</span><span><b>' + s.notices + '</b> notices</span></div></a>').join('') ||
+      '<p class="sm">' + (ROLE == 'admin' ? 'No subjects yet.</p><p><a class="btn y" href="' + page('subjects') + '">Create subject</a>' : 'No subject has been assigned to you yet.') + '</p>') + '</div>';
+
+  clock($('#clk'));
+  calendar($('#cal'), d.events, (k, list) => {
+    $('#dayh').textContent = k == today ? 'Today' : fmtDate(k);
+    $('#dayl').innerHTML = list.map(e => evRow(e)).join('') || '<p class="sm">Nothing on this date.</p>';
+  });
+  loadNotices(subs);
+}
+
+/* ---- notices of all my subjects (same database call the subject page uses: subject_content) ---- */
+let NL = [], NALL = false, NP = null;
+function paintNotices(list) {
+  NL = list;
+  const el = $('#dnl'); if (!el) return;
+  const show = NALL ? NL : NL.slice(0, 5);
+  el.innerHTML = (show.map((n, i) =>
+    '<button type="button" class="nrow" data-i="' + i + '"><span class="pill">' + esc(n.code) + '</span><span class="nrt"><b>' + esc(n.title) + '</b>' +
+    '<small>' + fmtDate(n.created_at) + (n.due_date ? ' · for ' + dt(n.due_date, n.due_time) : '') + '</small></span></button>').join('') || '<p class="sm">No notices yet.</p>') +
+    (NL.length > 5 ? '<div class="row" style="margin:8px 0 0"><button type="button" class="btn alt" id="nall">' + (NALL ? 'Show fewer' : 'Show all ' + NL.length + ' notices') + '</button></div>' : '');
+  el.querySelectorAll('.nrow').forEach(b => b.onclick = () => openNotice(NL[b.dataset.i]));
+  if ($('#nall')) $('#nall').onclick = () => { NALL = !NALL; paintNotices(NL); };
+}
+function openNotice(n) {
+  modal('<h3 style="margin:0 0 4px">' + esc(n.title) + '</h3><p class="sm" style="margin:0 0 10px">' + esc(n.code) + ' · ' + fmtDate(n.created_at) + (n.due_date ? ' · for ' + dt(n.due_date, n.due_time) : '') + '</p>' +
+    (n.message ? '<div class="rich">' + richHtml(n.message) + '</div>' : '<p class="sm">No more details.</p>') +
+    '<div class="row" style="margin:14px 0 0"><a class="btn" href="' + subUrl(n.code, 'notices') + '">Open in subject</a><button class="btn alt" onclick="closeModal()">Close</button></div>');
+}
+function loadNotices(subs) {
+  const fetcher = () => NP || (NP = Promise.all(subs.map(s => T('subject_content', { sid: s.id }).then(c => (c.notices || []).map(n => ({ ...n, code: s.code }))))).then(a =>
+    a.flat().sort((x, y) => String(y.created_at).localeCompare(String(x.created_at)))).finally(() => setTimeout(() => NP = null, 1000)));
+  swr('dnotes', fetcher, paintNotices).catch(e => { if ($('#dnl') && !NL.length) $('#dnl').innerHTML = '<p class="sm">Could not load notices.</p>'; });
+}
+
+if (needLogin()) (async () => {
+  buildShell('dash');
+  /* returning visitor: draw the last seen dashboard at once, then refresh it from the database */
+  const cs = cachedSubs(), cd = cget('dash');
+  if (cs && cd) render(cd, cs);
+  const [d, subs] = await Promise.all([T('dashboard'), SUBS]);
+  cset('dash', d);
+  if (!(cs && cd) || JSON.stringify([cd, cs]) !== JSON.stringify([d, subs])) render(d, subs);
+})().catch(e => toast(e.message, 1));
+
+function evRow(e, withDate) {
+  return '<div class="ev"><span class="pill ' + (e.kind == 'Lab' ? 'ok' : 'wait') + '">' + e.kind + '</span> <b>' + esc(e.title) + '</b> <span class="sm">· ' + esc(e.code) + (withDate ? ' · ' + fmtDate(e.date) : '') + (e.time ? ' · ' + fmtTime(e.time) : '') + '</span></div>';
+}
+</script>
+</body>
+</html>
